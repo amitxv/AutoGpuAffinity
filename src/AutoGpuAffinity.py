@@ -13,6 +13,7 @@ from termcolor import colored
 from tabulate import tabulate
 import ctypes
 import sys
+import platform
 
 version = '2.0.0'
 
@@ -175,6 +176,14 @@ if xperf:
     killProcess('xperf.exe')
 killProcess('lava-triangle.exe')
 killProcess('PresentMon.exe')
+killProcess('PresentMon-1.6.0-x64.exe')
+
+if platform.release() == 10:
+    present_mon_exe = "PresentMon.exe"
+else:
+    present_mon_exe = "PresentMon-1.6.0-x64.exe"
+
+PRESENTMON_DEBUG_ARG = {"PresentMon.exe": "-track_debug", "PresentMon-1.6.0-x64.exe": "-verbose"}
 
 active_thread = 0
 while active_thread != threads:
@@ -192,7 +201,7 @@ while active_thread != threads:
         if xperf:
             subprocess.run([xperf_location, '-on', 'base+interrupt+dpc'])
         try:
-            subprocess.run(['PresentMon.exe', '-stop_existing_session', '-no_top', '-track_debug', '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
+            subprocess.run([present_mon_exe, '-stop_existing_session', '-no_top', PRESENTMON_DEBUG_ARG[present_mon_exe], '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
         except subprocess.TimeoutExpired:
             pass
         if xperf:
