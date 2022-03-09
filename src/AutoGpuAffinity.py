@@ -14,10 +14,14 @@ from tabulate import tabulate
 import ctypes
 import sys
 import requests
-import webbrowser
 import platform
 
 version = '2.1.0'
+threads = psutil.cpu_count()
+cores = psutil.cpu_count(logical=False)
+gpu_info = wmi.WMI().Win32_VideoController()
+wsh = win32com.client.Dispatch('WScript.Shell')
+subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
 data = requests.get('https://api.github.com/repos/amitxv/AutoGpuAffinity/releases/latest')
 if data.json()['tag_name'] != version:
@@ -84,11 +88,17 @@ def calc(frametime_data, metric, value=None):
             if currentTotal >= value / 100 * sum(frametime_data):
                 return 1000 / present
 
-threads = psutil.cpu_count()
-cores = psutil.cpu_count(logical=False)
-gpu_info = wmi.WMI().Win32_VideoController()
-wsh = win32com.client.Dispatch('WScript.Shell')
-subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
+def applyAffinity(action, thread=None):
+    for item in gpu_info:
+        gpu_id = item.PnPDeviceID
+        if action == 'write':
+            writeKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
+            writeKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, getAffinity(thread, 'hex'))
+        elif action == 'delete':
+            deleteKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
+            deleteKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
+        subprocess.run(['pnputil', '/disable-device', gpu_id], **subprocess_null)
+        subprocess.run(['pnputil', '/enable-device', gpu_id], **subprocess_null)
 
 if threads > cores:
     HT = True
@@ -174,10 +184,7 @@ killProcesses()
 
 active_thread = 0
 while active_thread != threads:
-    for item in gpu_info:
-        writeKey(f'SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
-        writeKey(f'SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, getAffinity(active_thread, 'hex'))
-    subprocess.run(['restart64.exe', '/q'])
+    applyAffinity('write', active_thread)
     time.sleep(5)
     subprocess.run(['cmd.exe', '/c', 'start', '/affinity', f'{getAffinity(active_thread, "dec")}', 'lava-triangle.exe'])
     time.sleep(args.app_caching + 5)
@@ -231,10 +238,7 @@ os.system('color')
 os.system('cls')
 os.system('mode 300, 1000')
 
-for item in gpu_info:
-    deleteKey(f'SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
-    deleteKey(f'SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
-subprocess.run(['restart64.exe', '/q'])
+applyAffinity('delete')
 
 try:
     if int(platform.release()) >= 10:
