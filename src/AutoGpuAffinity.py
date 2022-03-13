@@ -16,7 +16,7 @@ import sys
 import requests
 import platform
 
-version = '2.1.0'
+version = '2.2.0'
 threads = psutil.cpu_count()
 cores = psutil.cpu_count(logical=False)
 gpu_info = wmi.WMI().Win32_VideoController()
@@ -35,10 +35,10 @@ if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     os.chdir(sys._MEIPASS)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-t', '--trials', type=int, metavar='', help='specify the number of trials to benchmark per CPU (3 recommended)', required=True)
-parser.add_argument('-d', '--duration', metavar='', type=int, help='specify the duration of each trial in seconds (30 recommended)', required=True)
-parser.add_argument('-x', '--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf', default=False)
-parser.add_argument('-c', '--app_caching', metavar='', type=int, help='specify the timeout in seconds for application caching after liblava is launched, reliability of results may be affected negatively if too low (default 20)', default=20)
+parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU (default 3)', default=3)
+parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds (default 30)', default=30)
+parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
+parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
 args = parser.parse_args()
 
 def writeKey(path, valueName, dataType, valueData):
@@ -115,7 +115,7 @@ for i in xperf_paths:
     if os.path.exists(i):
         xperf_location = i
 
-if not args.disable_xperf and xperf_location is not None:
+if args.disable_xperf is not None and xperf_location is not None:
     xperf = True
 else:
     xperf = False

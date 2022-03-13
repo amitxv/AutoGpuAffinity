@@ -28,7 +28,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 - Open cmd.exe with administrator privileges and run the following command including quotes (assuming you have downloaded the program to the downloads folder):
 
     ```
-    "%userprofile%\Downloads\AutoGpuAffinity.exe" -t 3 -d 30
+    "%userprofile%\Downloads\AutoGpuAffinity.exe"
     ```
 
 - Once you have read the notes, press any key to begin benchmarking.
@@ -41,12 +41,12 @@ Run the tool (not trials) two or three times. If the same core is consistently p
 
 ## CLI Arguments
 ````
-usage: AutoGpuAffinity [-h] -t  -d  [-x] [-c]
+usage: AutoGpuAffinity [-h] [--trials <trials>] [--duration <time>] [--disable_xperf] [--app_caching <time>]
 
 optional arguments:
-  -h, --help           show this help message and exit
-  -t , --trials        specify the number of trials to benchmark per CPU (3 recommended)
-  -d , --duration      specify the duration of each trial in seconds (30 recommended)
-  -x, --disable_xperf  disable DPC/ISR logging with xperf
-  -c , --app_caching   specify the timeout in seconds for application caching after liblava is launched, reliability of results may be affected negatively if too low (default 20)
+  -h, --help            show this help message and exit
+  --trials <trials>     specify the number of trials to benchmark per CPU (default 3)
+  --duration <time>     specify the duration of each trial in seconds (default 30)
+  --disable_xperf       disable DPC/ISR logging with xperf
+  --app_caching <time>  specify the timeout in seconds for application caching (default 20)
 ````
