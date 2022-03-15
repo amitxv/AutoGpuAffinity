@@ -38,6 +38,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU (default 3)', default=3)
 parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds (default 30)', default=30)
 parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
+parser.add_argument('--xperf_path', metavar='<path>', help='only use this if xperf is installed to a location other than deafault')
 parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
 args = parser.parse_args()
 
@@ -110,6 +111,9 @@ xperf_paths = [
     'C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\xperf.exe'
 ]
 
+if args.xperf_path is not None:
+    xperf_paths.append(args.xperf_path)
+
 xperf_location = None
 for i in xperf_paths:
     if os.path.exists(i):
@@ -130,7 +134,7 @@ print_info = f'''AutoGpuAffinity {version} Command Line
         Threads: {threads}
         Hyperthreading: {HT}
         Log DPCs/ISRs (xperf): {not args.disable_xperf}
-        Xperf path: {xperf_location}
+        Xperf path: "{xperf_location}"
         App Caching Timeout: {args.app_caching}
         Time for completion: {estimated/60:.2f} min
         Session Working directory: "{working_dir}"
