@@ -28,7 +28,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 - Open cmd.exe with administrator privileges and run the following command including quotes (assuming you have downloaded the program to the downloads folder):
 
     ```
-    "%userprofile%\Downloads\AutoGpuAffinity.exe"
+    "%userprofile%\Downloads\AutoGpuAffinity.exe" --trials 3 --duration 30
     ```
 
 - Once you have read the notes, press any key to begin benchmarking.
@@ -45,8 +45,9 @@ usage: AutoGpuAffinity [-h] [--trials <trials>] [--duration <time>] [--disable_x
 
 optional arguments:
   -h, --help            show this help message and exit
-  --trials <trials>     specify the number of trials to benchmark per CPU (default 3)
-  --duration <time>     specify the duration of each trial in seconds (default 30)
+  --trials <trials>     specify the number of trials to benchmark per CPU
+  --duration <time>     specify the duration of each trial in seconds
   --disable_xperf       disable DPC/ISR logging with xperf
+  --xperf_path <path>   only use this if xperf is installed to a location other than deafault
   --app_caching <time>  specify the timeout in seconds for application caching (default 20)
 ````

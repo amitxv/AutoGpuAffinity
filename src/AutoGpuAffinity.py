@@ -4,7 +4,7 @@ import winreg
 import os
 import time
 import argparse
-import win32com
+import win32com.client
 import subprocess
 import pandas
 import csv
@@ -16,31 +16,30 @@ import sys
 import requests
 import platform
 
-version = '2.2.0'
+version = '3.0'
 threads = psutil.cpu_count()
 cores = psutil.cpu_count(logical=False)
 gpu_info = wmi.WMI().Win32_VideoController()
 wsh = win32com.client.Dispatch('WScript.Shell')
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
-data = requests.get('https://api.github.com/repos/amitxv/AutoGpuAffinity/releases/latest')
-if data.json()['tag_name'] != version:
-    print('\nUpdate available: https://github.com/amitxv/AutoGpuAffinity/releases/latest\n')
-
 if ctypes.windll.shell32.IsUserAnAdmin() == False:
-    print('Administrator privileges required.')
-    sys.exit()
+    raise Exception('Administrator privileges required.')
 
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     os.chdir(sys._MEIPASS)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU (default 3)', default=3)
-parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds (default 30)', default=30)
+parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU', required=True)
+parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds', required=True)
 parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
 parser.add_argument('--xperf_path', metavar='<path>', help='only use this if xperf is installed to a location other than deafault')
 parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
 args = parser.parse_args()
+
+data = requests.get('https://api.github.com/repos/amitxv/AutoGpuAffinity/releases/latest')
+if data.json()['tag_name'] != version:
+    print('\nUpdate available: https://github.com/amitxv/AutoGpuAffinity/releases/latest\n')
 
 def writeKey(path, valueName, dataType, valueData):
     with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
@@ -51,9 +50,9 @@ def deleteKey(path, value_name):
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
             try:
                 winreg.DeleteValue(key, value_name)
-            except:
+            except FileNotFoundError:
                 pass
-    except:
+    except FileNotFoundError:
         pass
 
 def getAffinity(thread, return_value):
@@ -134,13 +133,13 @@ print_info = f'''AutoGpuAffinity {version} Command Line
         Threads: {threads}
         Hyperthreading: {HT}
         Log DPCs/ISRs (xperf): {not args.disable_xperf}
-        Xperf path: "{xperf_location}"
+        Xperf path: {xperf_location}
         App Caching Timeout: {args.app_caching}
         Time for completion: {estimated/60:.2f} min
-        Session Working directory: "{working_dir}"
+        Session Working directory: {working_dir}
 '''
 print(print_info)
-input('\tPress enter to start benchmarking...')
+input('\tPress enter to start benchmarking...\n')
 
 lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
 try:
@@ -187,7 +186,7 @@ if xperf:
 killProcesses()
 
 active_thread = 0
-while active_thread != threads:
+while active_thread < threads:
     applyAffinity('write', active_thread)
     time.sleep(5)
     subprocess.run(['cmd.exe', '/c', 'start', '/affinity', f'{getAffinity(active_thread, "dec")}', 'lava-triangle.exe'])
@@ -202,6 +201,8 @@ while active_thread != threads:
             subprocess.run(['PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
         except subprocess.TimeoutExpired:
             pass
+        if not os.path.exists(f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'):
+             raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
         if xperf:
             subprocess.run([xperf_location, '-stop'], **subprocess_null)
             subprocess.run([xperf_location, '-i', 'C:\\kernel.etl', '-o', f'{working_dir}\\xperf\\CPU-{active_thread}-Trial-{active_trial}.txt', '-a', 'dpcisr'])
@@ -211,10 +212,10 @@ while active_thread != threads:
         CSV = f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{trial}.csv'
         CSVs.append(pandas.read_csv(CSV))
         aggregated = pandas.concat(CSVs)
-        aggregated.to_csv(f'{working_dir}\\aggregated\\CPU-{active_thread}-aggregated.csv', index=False)
+        aggregated.to_csv(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', index=False)
     
     frametimes = []
-    with open(f'{working_dir}\\aggregated\\CPU-{active_thread}-aggregated.csv', 'r') as f:
+    with open(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', 'r') as f:
         for row in csv.DictReader(f):
             if row['MsBetweenPresents'] is not None:
                 frametimes.append(float(row['MsBetweenPresents']))
@@ -267,12 +268,9 @@ for column in range(1, len(main_table[0])):
     main_table[row_index][column] = new_value
 
 print_result_info = f'''
-    > Drag and drop the aggregated data (located in the working directory) into "https://boringboredom.github.io/Frame-Time-Analysis" for a graphical representation of the data.
-
+    > Drag and drop the aggregated data (located in the working directory) into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
     > Affinities for all GPUs have been reset to the Windows default (none).
-
     > Consider running this tool a few more times to see if the same core is consistently performant.
-
     > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
 '''
 
