@@ -14,22 +14,8 @@ from tabulate import tabulate
 import sys
 import platform
 
-threads = psutil.cpu_count()
-cores = psutil.cpu_count(logical=False)
 gpu_info = wmi.WMI().Win32_VideoController()
-wsh = win32com.client.Dispatch('WScript.Shell')
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
-
-if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-    os.chdir(sys._MEIPASS)
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU', required=True)
-parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds', required=True)
-parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
-parser.add_argument('--xperf_path', metavar='<path>', help='only use this if xperf is installed to a location other than deafault')
-parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
-args = parser.parse_args()
 
 def getAffinity(thread, return_value):
     dec_affinity = 0
@@ -90,180 +76,200 @@ def applyAffinity(action, thread=None):
         subprocess.run(['pnputil', '/disable-device', gpu_id], **subprocess_null)
         subprocess.run(['pnputil', '/enable-device', gpu_id], **subprocess_null)
 
-if threads > cores:
-    HT = True
-else:
-    HT = False
+def main():
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        os.chdir(sys._MEIPASS)
 
-xperf_paths = [
-    'C:\\Program Files\\Microsoft Windows Performance Toolkit\\xperf.exe',
-    'C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\xperf.exe'
-]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU', required=True)
+    parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds', required=True)
+    parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
+    parser.add_argument('--xperf_path', metavar='<path>', help='only use this if xperf is installed to a location other than deafault')
+    parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
+    args = parser.parse_args()
 
-if args.xperf_path is not None:
-    xperf_paths.append(args.xperf_path)
+    threads = psutil.cpu_count()
+    cores = psutil.cpu_count(logical=False)
 
-xperf_location = None
-for i in xperf_paths:
-    if os.path.exists(i):
-        xperf_location = i
+    if threads > cores:
+        HT = True
+    else:
+        HT = False
 
-if args.disable_xperf is not None and xperf_location is not None:
-    xperf = True
-else:
-    xperf = False
+    xperf_paths = [
+        'C:\\Program Files\\Microsoft Windows Performance Toolkit\\xperf.exe',
+        'C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\xperf.exe'
+    ]
 
-estimated = ((15 + args.app_caching + args.duration) * args.trials) * cores
-working_dir = f'{os.environ["TEMP"]}\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
-print_info = f'''AutoGpuAffinity Command Line
+    if args.xperf_path is not None:
+        xperf_paths.append(args.xperf_path)
 
-        Trials: {args.trials}
-        Trial Duration: {args.duration} sec
-        Cores: {cores}
-        Threads: {threads}
-        Hyperthreading: {HT}
-        Log DPCs/ISRs (xperf): {not args.disable_xperf}
-        Xperf path: {xperf_location}
-        App Caching Timeout: {args.app_caching}
-        Time for completion: {estimated/60:.2f} min
-        Session Working directory: {working_dir}
-'''
-print(print_info)
-input('\tPress enter to start benchmarking...\n')
+    xperf_location = None
+    for i in xperf_paths:
+        if os.path.exists(i):
+            xperf_location = i
 
-lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
-try:
-    os.makedirs(lavatriangle_folder)
-except:
-    pass
-lavatriangle_config = f'{lavatriangle_folder}\\window.json'
-if os.path.exists(lavatriangle_config):
-    os.remove(lavatriangle_config)
+    if args.disable_xperf is not None and xperf_location is not None:
+        xperf = True
+    else:
+        xperf = False
 
-lavatriangle_content = [
-    '{',
-    '    "default": {',
-    '        "decorated": true,',
-    '        "floating": false,',
-    '        "fullscreen": true,',
-    '        "height": 1080,',
-    '        "maximized": false,',
-    '        "monitor": 0,',
-    '        "resizable": true,',
-    '        "width": 1920,',
-    '        "x": 0,',
-    '        "y": 0',
-    '    }',
-    '}'
-]
+    estimated = ((15 + args.app_caching + args.duration) * args.trials) * cores
+    working_dir = f'{os.environ["TEMP"]}\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
+    print_info = f'''AutoGpuAffinity Command Line
 
-with open(lavatriangle_config, 'a') as f:
-    for i in lavatriangle_content:
-        f.write(f'{i}\n')
+            Trials: {args.trials}
+            Trial Duration: {args.duration} sec
+            Cores: {cores}
+            Threads: {threads}
+            Hyperthreading: {HT}
+            Log DPCs/ISRs (xperf): {not args.disable_xperf}
+            Xperf path: {xperf_location}
+            App Caching Timeout: {args.app_caching}
+            Time for completion: {estimated/60:.2f} min
+            Session Working directory: {working_dir}
+    '''
+    print(print_info)
+    input('\tPress enter to start benchmarking...\n')
 
-os.mkdir(working_dir)
-os.mkdir(f'{working_dir}\\raw')
-if xperf:
-    os.mkdir(f'{working_dir}\\xperf')
-os.mkdir(f'{working_dir}\\aggregated')
+    lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
+    try:
+        os.makedirs(lavatriangle_folder)
+    except:
+        pass
+    lavatriangle_config = f'{lavatriangle_folder}\\window.json'
+    if os.path.exists(lavatriangle_config):
+        os.remove(lavatriangle_config)
 
-main_table = []
-main_table.append(['', 'Max', 'Avg', 'Min', '1 %ile', '0.1 %ile', '0.01 %ile', '0.005 %ile' , '1% Low', '0.1% Low', '0.01% Low', '0.005% Low'])
+    lavatriangle_content = [
+        '{',
+        '    "default": {',
+        '        "decorated": true,',
+        '        "floating": false,',
+        '        "fullscreen": true,',
+        '        "height": 1080,',
+        '        "maximized": false,',
+        '        "monitor": 0,',
+        '        "resizable": true,',
+        '        "width": 1920,',
+        '        "x": 0,',
+        '        "y": 0',
+        '    }',
+        '}'
+    ]
 
-# kill all processes before loop
-if xperf:
-    subprocess.run([xperf_location, '-stop'], **subprocess_null)
-killProcesses()
+    with open(lavatriangle_config, 'a') as f:
+        for i in lavatriangle_content:
+            f.write(f'{i}\n')
 
-active_thread = 0
-while active_thread < threads:
-    applyAffinity('write', active_thread)
-    time.sleep(5)
-    subprocess.run(['cmd.exe', '/c', 'start', '/affinity', f'{getAffinity(active_thread, "dec")}', 'lava-triangle.exe'])
-    time.sleep(args.app_caching + 5)
+    os.mkdir(working_dir)
+    os.mkdir(f'{working_dir}\\raw')
+    if xperf:
+        os.mkdir(f'{working_dir}\\xperf')
+    os.mkdir(f'{working_dir}\\aggregated')
 
-    for active_trial in range(1, args.trials + 1):
-        print(f'Currently benchmarking: CPU-{active_thread}-Trial-{active_trial}/{args.trials}...')
-        wsh.AppActivate('lava triangle')
-        if xperf:
-            subprocess.run([xperf_location, '-on', 'base+interrupt+dpc'])
-        try:
-            subprocess.run(['PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
-        except subprocess.TimeoutExpired:
-            pass
-        if not os.path.exists(f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'):
-             raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
-        if xperf:
-            subprocess.run([xperf_location, '-stop'], **subprocess_null)
-            subprocess.run([xperf_location, '-i', 'C:\\kernel.etl', '-o', f'{working_dir}\\xperf\\CPU-{active_thread}-Trial-{active_trial}.txt', '-a', 'dpcisr'])
+    wsh = win32com.client.Dispatch('WScript.Shell')
+
+    main_table = []
+    main_table.append(['', 'Max', 'Avg', 'Min', '1 %ile', '0.1 %ile', '0.01 %ile', '0.005 %ile' , '1% Low', '0.1% Low', '0.01% Low', '0.005% Low'])
+
+    # kill all processes before loop
+    if xperf:
+        subprocess.run([xperf_location, '-stop'], **subprocess_null)
     killProcesses()
-    CSVs = []
-    for trial in range(1, args.trials + 1):
-        CSV = f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{trial}.csv'
-        CSVs.append(pandas.read_csv(CSV))
-        aggregated = pandas.concat(CSVs)
-        aggregated.to_csv(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', index=False)
-    
-    frametimes = []
-    with open(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', 'r') as f:
-        for row in csv.DictReader(f):
-            if row['MsBetweenPresents'] is not None:
-                frametimes.append(float(row['MsBetweenPresents']))
-    frametimes = sorted(frametimes, reverse=True)
 
-    data = []
-    data.append(f'CPU {active_thread}')
-    for metric in ('Max', 'Avg', 'Min'):
-        data.append(float(f'{calc(frametimes, metric):.2f}'))
+    active_thread = 0
+    while active_thread < threads:
+        applyAffinity('write', active_thread)
+        time.sleep(5)
+        subprocess.run(['cmd.exe', '/c', 'start', '/affinity', f'{getAffinity(active_thread, "dec")}', 'lava-triangle.exe'])
+        time.sleep(args.app_caching + 5)
 
-    for metric in ('Percentile', 'Lows'):
-        for value in (1, 0.1, 0.01, 0.005):
-            data.append(float(f'{calc(frametimes, metric, value):.2f}'))
-    main_table.append(data)
+        for active_trial in range(1, args.trials + 1):
+            print(f'Currently benchmarking: CPU-{active_thread}-Trial-{active_trial}/{args.trials}...')
+            wsh.AppActivate('lava triangle')
+            if xperf:
+                subprocess.run([xperf_location, '-on', 'base+interrupt+dpc'])
+            try:
+                subprocess.run(['PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
+            except subprocess.TimeoutExpired:
+                pass
+            if not os.path.exists(f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'):
+                raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
+            if xperf:
+                subprocess.run([xperf_location, '-stop'], **subprocess_null)
+                subprocess.run([xperf_location, '-i', 'C:\\kernel.etl', '-o', f'{working_dir}\\xperf\\CPU-{active_thread}-Trial-{active_trial}.txt', '-a', 'dpcisr'])
+        killProcesses()
+        CSVs = []
+        for trial in range(1, args.trials + 1):
+            CSV = f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{trial}.csv'
+            CSVs.append(pandas.read_csv(CSV))
+            aggregated = pandas.concat(CSVs)
+            aggregated.to_csv(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', index=False)
+        
+        frametimes = []
+        with open(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', 'r') as f:
+            for row in csv.DictReader(f):
+                if row['MsBetweenPresents'] is not None:
+                    frametimes.append(float(row['MsBetweenPresents']))
+        frametimes = sorted(frametimes, reverse=True)
 
-    if HT:
-        active_thread += 2
-    else:
-        active_thread += 1
+        data = []
+        data.append(f'CPU {active_thread}')
+        for metric in ('Max', 'Avg', 'Min'):
+            data.append(float(f'{calc(frametimes, metric):.2f}'))
 
-if os.path.exists('C:\\kernel.etl'):
-    os.remove('C:\\kernel.etl')
+        for metric in ('Percentile', 'Lows'):
+            for value in (1, 0.1, 0.01, 0.005):
+                data.append(float(f'{calc(frametimes, metric, value):.2f}'))
+        main_table.append(data)
 
-os.system('color')
-os.system('cls')
-os.system('mode 300, 1000')
+        if HT:
+            active_thread += 2
+        else:
+            active_thread += 1
 
-applyAffinity('delete')
+    if os.path.exists('C:\\kernel.etl'):
+        os.remove('C:\\kernel.etl')
 
-try:
-    if int(platform.release()) >= 10:
-        highest_fps_color = True
-    else:
+    os.system('color')
+    os.system('cls')
+    os.system('mode 300, 1000')
+
+    applyAffinity('delete')
+
+    try:
+        if int(platform.release()) >= 10:
+            highest_fps_color = True
+        else:
+            highest_fps_color = False
+    except:
         highest_fps_color = False
-except:
-    highest_fps_color = False
 
-for column in range(1, len(main_table[0])):
-    highest_fps = 0
-    row_index = ''
-    for row in range(1, len(main_table)):
-        fps = main_table[row][column]
-        if fps > highest_fps:
-            highest_fps = fps
-            row_index = row
-    if highest_fps_color:
-        new_value = colored(f'*{main_table[row_index][column]}', 'green')
-    else:
-        new_value  = f'*{main_table[row_index][column]}'
-    main_table[row_index][column] = new_value
+    for column in range(1, len(main_table[0])):
+        highest_fps = 0
+        row_index = ''
+        for row in range(1, len(main_table)):
+            fps = main_table[row][column]
+            if fps > highest_fps:
+                highest_fps = fps
+                row_index = row
+        if highest_fps_color:
+            new_value = colored(f'*{main_table[row_index][column]}', 'green')
+        else:
+            new_value  = f'*{main_table[row_index][column]}'
+        main_table[row_index][column] = new_value
 
-print_result_info = f'''
-    > Drag and drop the aggregated data (located in the working directory) into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
-    > Affinities for all GPUs have been reset to the Windows default (none).
-    > Consider running this tool a few more times to see if the same core is consistently performant.
-    > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
-'''
+    print_result_info = f'''
+        > Drag and drop the aggregated data (located in the working directory) into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
+        > Affinities for all GPUs have been reset to the Windows default (none).
+        > Consider running this tool a few more times to see if the same core is consistently performant.
+        > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
+    '''
 
-print(print_info)
-print(tabulate(main_table, headers='firstrow', tablefmt='fancy_grid', floatfmt='.2f'), '\n')
-print(print_result_info)
+    print(print_info)
+    print(tabulate(main_table, headers='firstrow', tablefmt='fancy_grid', floatfmt='.2f'), '\n')
+    print(print_result_info)
+
+if __name__ == '__main__':
+    main()
