@@ -1,3 +1,3 @@
 @echo off
-pyinstaller AutoGpuAffinity.py --onefile --add-data "lava-triangle.exe;." --add-data "PresentMon.exe;." --add-data "res.zip;."
+pyinstaller AutoGpuAffinity.py --onefile --add-binary "lava-triangle.exe;." --add-binary "PresentMon.exe;." --add-data "res.zip;." --uac-admin
 exit /b

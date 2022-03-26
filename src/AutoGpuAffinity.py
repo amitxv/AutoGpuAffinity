@@ -11,20 +11,14 @@ import csv
 import math
 from termcolor import colored
 from tabulate import tabulate
-import ctypes
 import sys
-import requests
 import platform
 
-version = '3.0'
 threads = psutil.cpu_count()
 cores = psutil.cpu_count(logical=False)
 gpu_info = wmi.WMI().Win32_VideoController()
 wsh = win32com.client.Dispatch('WScript.Shell')
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
-
-if ctypes.windll.shell32.IsUserAnAdmin() == False:
-    raise Exception('Administrator privileges required.')
 
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     os.chdir(sys._MEIPASS)
@@ -36,24 +30,6 @@ parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/IS
 parser.add_argument('--xperf_path', metavar='<path>', help='only use this if xperf is installed to a location other than deafault')
 parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
 args = parser.parse_args()
-
-data = requests.get('https://api.github.com/repos/amitxv/AutoGpuAffinity/releases/latest')
-if data.json()['tag_name'] != version:
-    print('\nUpdate available: https://github.com/amitxv/AutoGpuAffinity/releases/latest\n')
-
-def writeKey(path, valueName, dataType, valueData):
-    with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
-        winreg.SetValueEx(key, valueName, 0, dataType, valueData)
-
-def deleteKey(path, value_name):
-    try:
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
-            try:
-                winreg.DeleteValue(key, value_name)
-            except FileNotFoundError:
-                pass
-    except FileNotFoundError:
-        pass
 
 def getAffinity(thread, return_value):
     dec_affinity = 0
@@ -89,6 +65,20 @@ def calc(frametime_data, metric, value=None):
                 return 1000 / present
 
 def applyAffinity(action, thread=None):
+    def writeKey(path, valueName, dataType, valueData):
+        with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
+            winreg.SetValueEx(key, valueName, 0, dataType, valueData)
+
+    def deleteKey(path, value_name):
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
+                try:
+                    winreg.DeleteValue(key, value_name)
+                except FileNotFoundError:
+                    pass
+        except FileNotFoundError:
+            pass
+
     for item in gpu_info:
         gpu_id = item.PnPDeviceID
         if action == 'write':
@@ -125,7 +115,7 @@ else:
 
 estimated = ((15 + args.app_caching + args.duration) * args.trials) * cores
 working_dir = f'{os.environ["TEMP"]}\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
-print_info = f'''AutoGpuAffinity {version} Command Line
+print_info = f'''AutoGpuAffinity Command Line
 
         Trials: {args.trials}
         Trial Duration: {args.duration} sec
