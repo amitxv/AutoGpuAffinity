@@ -76,6 +76,37 @@ def applyAffinity(action, thread=None):
         subprocess.run(['pnputil', '/disable-device', gpu_id], **subprocess_null)
         subprocess.run(['pnputil', '/enable-device', gpu_id], **subprocess_null)
 
+def create_lava_cfg():
+    lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
+    try:
+        os.makedirs(lavatriangle_folder)
+    except:
+        pass
+    lavatriangle_config = f'{lavatriangle_folder}\\window.json'
+    if os.path.exists(lavatriangle_config):
+        os.remove(lavatriangle_config)
+
+    lavatriangle_content = [
+        '{',
+        '    "default": {',
+        '        "decorated": true,',
+        '        "floating": false,',
+        '        "fullscreen": true,',
+        '        "height": 1080,',
+        '        "maximized": false,',
+        '        "monitor": 0,',
+        '        "resizable": true,',
+        '        "width": 1920,',
+        '        "x": 0,',
+        '        "y": 0',
+        '    }',
+        '}'
+    ]
+
+    with open(lavatriangle_config, 'a') as f:
+        for i in lavatriangle_content:
+            f.write(f'{i}\n')
+
 def main():
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         os.chdir(sys._MEIPASS)
@@ -132,35 +163,7 @@ def main():
     print(print_info)
     input('\tPress enter to start benchmarking...\n')
 
-    lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
-    try:
-        os.makedirs(lavatriangle_folder)
-    except:
-        pass
-    lavatriangle_config = f'{lavatriangle_folder}\\window.json'
-    if os.path.exists(lavatriangle_config):
-        os.remove(lavatriangle_config)
-
-    lavatriangle_content = [
-        '{',
-        '    "default": {',
-        '        "decorated": true,',
-        '        "floating": false,',
-        '        "fullscreen": true,',
-        '        "height": 1080,',
-        '        "maximized": false,',
-        '        "monitor": 0,',
-        '        "resizable": true,',
-        '        "width": 1920,',
-        '        "x": 0,',
-        '        "y": 0',
-        '    }',
-        '}'
-    ]
-
-    with open(lavatriangle_config, 'a') as f:
-        for i in lavatriangle_content:
-            f.write(f'{i}\n')
+    create_lava_cfg()
 
     os.mkdir(working_dir)
     os.mkdir(f'{working_dir}\\raw')
@@ -188,8 +191,7 @@ def main():
         for active_trial in range(1, args.trials + 1):
             print(f'Currently benchmarking: CPU-{active_thread}-Trial-{active_trial}/{args.trials}...')
             wsh.AppActivate('lava triangle')
-            if xperf:
-                subprocess.run([xperf_location, '-on', 'base+interrupt+dpc'])
+            if xperf: subprocess.run([xperf_location, '-on', 'base+interrupt+dpc'])
             try:
                 subprocess.run(['PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
             except subprocess.TimeoutExpired:
