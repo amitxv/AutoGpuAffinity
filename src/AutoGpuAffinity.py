@@ -108,10 +108,13 @@ def create_lava_cfg():
             f.write(f'{i}\n')
 
 def main():
+    version = 3.1
+
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         os.chdir(sys._MEIPASS)
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--version', action='version', version=f'AutoGpuAffinity v{version}', help='show version and exit')
     parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU', required=True)
     parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds', required=True)
     parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
@@ -146,8 +149,10 @@ def main():
         xperf = False
 
     estimated = ((15 + args.app_caching + args.duration) * args.trials) * cores
-    working_dir = f'{os.environ["TEMP"]}\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
-    print_info = f'''AutoGpuAffinity Command Line
+    
+
+    working_dir = f'{os.environ["USERPROFILE"]}\\AppData\\Local\\Temp\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
+    print_info = f'''AutoGpuAffinity v{version} Command Line
 
             Trials: {args.trials}
             Trial Duration: {args.duration} sec
