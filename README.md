@@ -41,10 +41,12 @@ Run the tool (not trials) two or three times. If the same core is consistently p
 
 ## CLI Arguments
 ````
-usage: AutoGpuAffinity [-h] [--trials <trials>] [--duration <time>] [--disable_xperf] [--app_caching <time>]
+usage: AutoGpuAffinity [-h] [--version] --trials <trials> --duration <time> [--disable_xperf] [--xperf_path <path>]
+                          [--app_caching <time>]
 
 optional arguments:
   -h, --help            show this help message and exit
+  --version             show version and exit
   --trials <trials>     specify the number of trials to benchmark per CPU
   --duration <time>     specify the duration of each trial in seconds
   --disable_xperf       disable DPC/ISR logging with xperf
