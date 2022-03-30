@@ -17,7 +17,7 @@ import platform
 gpu_info = wmi.WMI().Win32_VideoController()
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
-def getAffinity(thread, return_value):
+def get_affinity(thread, return_value):
     dec_affinity = 0
     dec_affinity |= 1 << thread
     bin_affinity = bin(dec_affinity).replace('0b', '')
@@ -27,7 +27,7 @@ def getAffinity(thread, return_value):
     elif return_value == 'hex':
         return le_hex
 
-def killProcesses():
+def kill_processes():
     for p in psutil.process_iter():
         for target in ('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe'):
             if p.name() == target:
@@ -44,18 +44,18 @@ def calc(frametime_data, metric, value=None):
     elif metric == 'Percentile':
         return 1000 / frametime_data[math.ceil(value / 100 * len(frametime_data)) - 1]
     elif metric == 'Lows':
-        currentTotal = 0.0
+        current_total = 0.0
         for present in frametime_data:
-            currentTotal += present
-            if currentTotal >= value / 100 * sum(frametime_data):
+            current_total += present
+            if current_total >= value / 100 * sum(frametime_data):
                 return 1000 / present
 
-def applyAffinity(action, thread=None):
-    def writeKey(path, valueName, dataType, valueData):
+def apply_affinity(action, thread=None):
+    def write_key(path, value_name, data_type, value_data):
         with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
-            winreg.SetValueEx(key, valueName, 0, dataType, valueData)
+            winreg.SetValueEx(key, value_name, 0, data_type, value_data)
 
-    def deleteKey(path, value_name):
+    def delete_key(path, value_name):
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
                 try:
@@ -68,11 +68,11 @@ def applyAffinity(action, thread=None):
     for item in gpu_info:
         gpu_id = item.PnPDeviceID
         if action == 'write':
-            writeKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
-            writeKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, getAffinity(thread, 'hex'))
+            write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
+            write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, get_affinity(thread, 'hex'))
         elif action == 'delete':
-            deleteKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
-            deleteKey(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
+            delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
+            delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
         subprocess.run(['pnputil', '/disable-device', gpu_id], **subprocess_null)
         subprocess.run(['pnputil', '/enable-device', gpu_id], **subprocess_null)
 
@@ -149,8 +149,6 @@ def main():
         xperf = False
 
     estimated = ((15 + args.app_caching + args.duration) * args.trials) * cores
-    
-
     working_dir = f'{os.environ["USERPROFILE"]}\\AppData\\Local\\Temp\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
     print_info = f'''AutoGpuAffinity v{version} Command Line
 
@@ -184,13 +182,13 @@ def main():
     # kill all processes before loop
     if xperf:
         subprocess.run([xperf_location, '-stop'], **subprocess_null)
-    killProcesses()
+    kill_processes()
 
     active_thread = 0
     while active_thread < threads:
-        applyAffinity('write', active_thread)
+        apply_affinity('write', active_thread)
         time.sleep(5)
-        subprocess.run(['cmd.exe', '/c', 'start', '/affinity', f'{getAffinity(active_thread, "dec")}', 'lava-triangle.exe'])
+        subprocess.run(['cmd.exe', '/c', 'start', '/affinity', f'{get_affinity(active_thread, "dec")}', 'lava-triangle.exe'])
         time.sleep(args.app_caching + 5)
 
         for active_trial in range(1, args.trials + 1):
@@ -206,7 +204,7 @@ def main():
             if xperf:
                 subprocess.run([xperf_location, '-stop'], **subprocess_null)
                 subprocess.run([xperf_location, '-i', 'C:\\kernel.etl', '-o', f'{working_dir}\\xperf\\CPU-{active_thread}-Trial-{active_trial}.txt', '-a', 'dpcisr'])
-        killProcesses()
+        kill_processes()
         CSVs = []
         for trial in range(1, args.trials + 1):
             CSV = f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{trial}.csv'
@@ -243,7 +241,7 @@ def main():
     os.system('cls')
     os.system('mode 300, 1000')
 
-    applyAffinity('delete')
+    apply_affinity('delete')
 
     try:
         if int(platform.release()) >= 10:
