@@ -41,12 +41,12 @@ def calc(frametime_data, metric, value=None):
     elif metric == 'Min':
         return 1000 / frametime_data['max']
     elif metric == 'Percentile':
-        return 1000 / (frametime_data['frametimes'][math.ceil(value / 100 * frametime_data['len']) - 1])
+        return 1000 / frametime_data['frametimes'][math.ceil(value / 100 * frametime_data['len']) - 1]
     elif metric == 'Lows':
         current_total = 0.0
         for present in frametime_data['frametimes']:
             current_total += present
-            if current_total >= value / (100 * frametime_data['sum']):
+            if current_total >= value / 100 * frametime_data['sum']:
                 return 1000 / present
 
 def apply_affinity(action, thread=None):
@@ -107,7 +107,7 @@ def create_lava_cfg():
             f.write(f'{i}\n')
 
 def main():
-    version = 3.1
+    version = 3.2
 
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         os.chdir(sys._MEIPASS)
@@ -228,11 +228,11 @@ def main():
         data = []
         data.append(f'CPU {active_thread}')
         for metric in ('Max', 'Avg', 'Min'):
-            data.append(float(f'{calc(frametime_data, metric):.2f}'))
+            data.append(f'{calc(frametime_data, metric):.2f}')
 
         for metric in ('Percentile', 'Lows'):
             for value in (1, 0.1, 0.01, 0.005):
-                data.append(float(f'{calc(frametime_data, metric, value):.2f}'))
+                data.append(f'{calc(frametime_data, metric, value):.2f}')
         main_table.append(data)
 
         if HT:
@@ -261,14 +261,14 @@ def main():
         highest_fps = 0
         row_index = ''
         for row in range(1, len(main_table)):
-            fps = main_table[row][column]
+            fps = float(main_table[row][column])
             if fps > highest_fps:
                 highest_fps = fps
                 row_index = row
         if highest_fps_color:
-            new_value = colored(f'*{main_table[row_index][column]}', 'green')
+            new_value = colored(f'*{float(main_table[row_index][column]):.2f}', 'green')
         else:
-            new_value  = f'*{main_table[row_index][column]}'
+            new_value  = f'*{float(main_table[row_index][column]):.2f}'
         main_table[row_index][column] = new_value
 
     print_result_info = f'''
