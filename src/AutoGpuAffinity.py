@@ -35,18 +35,19 @@ def kill_processes():
 
 def calc(frametime_data, metric, value=None):
     if metric == 'Max':
-        return 1000 / frametime_data['min']
+        return 1000 / min(frametime_data)
     elif metric == 'Avg':
-        return 1000 / (frametime_data['sum'] / frametime_data['len'])
+        Avg = sum(frametime_data) / len(frametime_data)
+        return 1000 / Avg
     elif metric == 'Min':
-        return 1000 / frametime_data['max']
+        return 1000 / max(frametime_data)
     elif metric == 'Percentile':
-        return 1000 / frametime_data['frametimes'[math.ceil(value / 100 * len(frametime_data)) - 1]]
+        return 1000 / frametime_data[math.ceil(value / 100 * len(frametime_data)) - 1]
     elif metric == 'Lows':
         current_total = 0.0
         for present in frametime_data:
             current_total += present
-            if current_total >= value / 100 * frametime_data[sum]:
+            if current_total >= value / 100 * sum(frametime_data):
                 return 1000 / present
 
 def apply_affinity(action, thread=None):
@@ -218,13 +219,6 @@ def main():
                     frametimes.append(float(row['MsBetweenPresents']))
         frametimes = sorted(frametimes, reverse=True)
 
-        frametime_data = {}
-        frametime_data['frametimes'] = frametimes
-        frametime_data['min'] = min(frametimes)
-        frametime_data['max'] = max(frametimes)
-        frametime_data['sum'] = sum(frametimes)
-        frametime_data['len'] = len(frametimes)
-
         data = []
         data.append(f'CPU {active_thread}')
         for metric in ('Max', 'Avg', 'Min'):
@@ -232,7 +226,7 @@ def main():
 
         for metric in ('Percentile', 'Lows'):
             for value in (1, 0.1, 0.01, 0.005):
-                data.append(float(f'{calc(frametime_data, metric, value):.2f}'))
+                data.append(float(f'{calc(frametimes, metric, value):.2f}'))
         main_table.append(data)
 
         if HT:
