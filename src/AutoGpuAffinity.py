@@ -35,19 +35,18 @@ def kill_processes():
 
 def calc(frametime_data, metric, value=None):
     if metric == 'Max':
-        return 1000 / min(frametime_data)
+        return 1000 / frametime_data['min']
     elif metric == 'Avg':
-        Avg = sum(frametime_data) / len(frametime_data)
-        return 1000 / Avg
+        return 1000 / (frametime_data['sum'] / frametime_data['len'])
     elif metric == 'Min':
-        return 1000 / max(frametime_data)
+        return 1000 / frametime_data['max']
     elif metric == 'Percentile':
-        return 1000 / frametime_data[math.ceil(value / 100 * len(frametime_data)) - 1]
+        return 1000 / (frametime_data['frametimes'][math.ceil(value / 100 * frametime_data['len']) - 1])
     elif metric == 'Lows':
         current_total = 0.0
-        for present in frametime_data:
+        for present in frametime_data['frametimes']:
             current_total += present
-            if current_total >= value / 100 * sum(frametime_data):
+            if current_total >= value / (100 * frametime_data['sum']):
                 return 1000 / present
 
 def apply_affinity(action, thread=None):
@@ -80,7 +79,7 @@ def create_lava_cfg():
     lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
     try:
         os.makedirs(lavatriangle_folder)
-    except:
+    except FileExistsError:
         pass
     lavatriangle_config = f'{lavatriangle_folder}\\window.json'
     if os.path.exists(lavatriangle_config):
@@ -219,14 +218,21 @@ def main():
                     frametimes.append(float(row['MsBetweenPresents']))
         frametimes = sorted(frametimes, reverse=True)
 
+        frametime_data = {}
+        frametime_data['frametimes'] = frametimes
+        frametime_data['min'] = min(frametimes)
+        frametime_data['max'] = max(frametimes)
+        frametime_data['sum'] = sum(frametimes)
+        frametime_data['len'] = len(frametimes)
+
         data = []
         data.append(f'CPU {active_thread}')
         for metric in ('Max', 'Avg', 'Min'):
-            data.append(float(f'{calc(frametimes, metric):.2f}'))
+            data.append(float(f'{calc(frametime_data, metric):.2f}'))
 
         for metric in ('Percentile', 'Lows'):
             for value in (1, 0.1, 0.01, 0.005):
-                data.append(float(f'{calc(frametimes, metric, value):.2f}'))
+                data.append(float(f'{calc(frametime_data, metric, value):.2f}'))
         main_table.append(data)
 
         if HT:
