@@ -1,0 +1,15 @@
+// number of trials to benchmark per CPU
+trials=3
+
+// duration of each trial in seconds
+duration=30
+
+// dpc/isr logging with xperf
+// upon runtime, if xperf.exe is not found this setting evaluates to 0
+dpcisr=1
+
+// xperf path excluding quotes
+xperf_path=C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\xperf.exe
+
+// number of trials to execute to build cache
+cache_trials=1

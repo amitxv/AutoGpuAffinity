@@ -3,32 +3,21 @@ import wmi
 import winreg
 import os
 import time
-import argparse
-import win32com.client
 import subprocess
 import pandas
 import csv
 import math
 from termcolor import colored
 from tabulate import tabulate
-import sys
 import platform
 
 gpu_info = wmi.WMI().Win32_VideoController()
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
-def get_affinity(thread):
-    dec_affinity = 0
-    dec_affinity |= 1 << thread
-    bin_affinity = bin(dec_affinity).replace('0b', '')
-    le_hex = int(bin_affinity, 2).to_bytes(8, 'little').rstrip(b'\x00')
-    return le_hex
-
-def kill_processes():
+def kill_processes(*targets):
     for p in psutil.process_iter():
-        for target in ('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe'):
-            if p.name() == target:
-                p.kill()
+        if p.name() in targets:
+            p.kill()
 
 def calc(frametime_data, metric, value=None):
     if metric == 'Max':
@@ -61,11 +50,17 @@ def apply_affinity(action, thread=None):
         except FileNotFoundError:
             pass
 
+    if thread is not None:
+        dec_affinity = 0
+        dec_affinity |= 1 << thread
+        bin_affinity = bin(dec_affinity).replace('0b', '')
+        le_hex = int(bin_affinity, 2).to_bytes(8, 'little').rstrip(b'\x00')
+
     for item in gpu_info:
         gpu_id = item.PnPDeviceID
         if action == 'write':
             write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
-            write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, get_affinity(thread))
+            write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, le_hex)
         elif action == 'delete':
             delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
             delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
@@ -103,20 +98,29 @@ def create_lava_cfg():
         for i in lavatriangle_content:
             f.write(f'{i}\n')
 
+def log(msg):
+    print(f'[{time.strftime("%H:%M")}] CLI: {msg}')
+
 def main():
-    version = 3.2
+    version = 4.0
 
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        os.chdir(sys._MEIPASS)
+    config = {}
+    with open('config.txt', 'r') as f:
+        for line in f:
+            if '//' not in line:
+                line = line.strip('\n')
+                setting, equ, value = line.rpartition('=')
+                if setting != '' and value != '':
+                    config[setting] = value
+          
+    trials = int(config['trials'])
+    duration = int(config['duration'])
+    dpcisr = int(config['dpcisr'])
+    xperf_path = str(config['xperf_path'])
+    cache_trials = int(config['cache_trials'])
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--version', action='version', version=f'AutoGpuAffinity v{version}', help='show version and exit')
-    parser.add_argument('--trials', type=int, metavar='<trials>', help='specify the number of trials to benchmark per CPU', required=True)
-    parser.add_argument('--duration', metavar='<time>', type=int, help='specify the duration of each trial in seconds', required=True)
-    parser.add_argument('--disable_xperf', action='store_true', help='disable DPC/ISR logging with xperf')
-    parser.add_argument('--xperf_path', metavar='<path>', help='only use this if xperf is installed to a location other than deafault')
-    parser.add_argument('--app_caching', metavar='<time>', type=int, help='specify the timeout in seconds for application caching (default 20)', default=20)
-    args = parser.parse_args()
+    if trials <= 0 or cache_trials < 0 or duration <= 0:
+        raise ValueError('invalid trials, cache_trials or duration in config')
 
     threads = psutil.cpu_count()
     cores = psutil.cpu_count(logical=False)
@@ -126,98 +130,82 @@ def main():
     else:
         HT = False
 
-    xperf_paths = [
-        'C:\\Program Files\\Microsoft Windows Performance Toolkit\\xperf.exe',
-        'C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\xperf.exe'
-    ]
-
-    if args.xperf_path is not None:
-        xperf_paths.append(args.xperf_path)
-
-    xperf_location = None
-    for i in xperf_paths:
-        if os.path.exists(i):
-            xperf_location = i
-
-    if args.disable_xperf is not None and xperf_location is not None:
+    if dpcisr != 0 and os.path.exists(xperf_path):
         xperf = True
     else:
         xperf = False
 
-    estimated = ((15 + args.app_caching + args.duration) * args.trials) * cores
-    working_dir = f'{os.environ["USERPROFILE"]}\\AppData\\Local\\Temp\\AutoGpuAffinity{time.strftime("%d%m%y%H%M%S")}'
+    estimated = (5 + (cache_trials * (duration+ 5)) + (trials * (duration + 5))) * cores
+    output_path = f'captures\\AutoGpuAffinity-{time.strftime("%d%m%y%H%M%S")}'
     print_info = f'''
     AutoGpuAffinity v{version} Command Line
 
-        Trials: {args.trials}
-        Trial Duration: {args.duration} sec
+        Trials: {trials}
+        Trial Duration: {duration} sec
         Cores: {cores}
         Threads: {threads}
-        Hyperthreading: {HT}
-        Log DPCs/ISRs (xperf): {not args.disable_xperf}
-        Xperf path: {xperf_location}
-        App Caching Timeout: {args.app_caching}
+        Hyperthreading/SMT: {HT}
+        Log dpc/isr with xperf: {xperf}
+        Cache trials: {cache_trials}
         Time for completion: {estimated/60:.2f} min
-        Session Working directory: {working_dir}
+        Session Working directory: \\{output_path}\\
     '''
     print(print_info)
     input('    Press enter to start benchmarking...\n')
 
     create_lava_cfg()
 
-    os.mkdir(working_dir)
-    os.mkdir(f'{working_dir}\\raw')
-    if xperf:
-        os.mkdir(f'{working_dir}\\xperf')
-    os.mkdir(f'{working_dir}\\aggregated')
-
-    wsh = win32com.client.Dispatch('WScript.Shell')
+    os.mkdir(output_path)
+    os.mkdir(f'{output_path}\\CSVs')
+    if xperf: os.mkdir(f'{output_path}\\xperf')
 
     main_table = []
     main_table.append(['', 'Max', 'Avg', 'Min', '1 %ile', '0.1 %ile', '0.01 %ile', '0.005 %ile' , '1% Low', '0.1% Low', '0.01% Low', '0.005% Low'])
 
     # kill all processes before loop
-    if xperf:
-        subprocess.run([xperf_location, '-stop'], **subprocess_null)
-    kill_processes()
+    if xperf: subprocess.run([xperf_path, '-stop'], **subprocess_null)
+    kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
     active_thread = 0
     while active_thread < threads:
         apply_affinity('write', active_thread)
         time.sleep(5)
-        subprocess.Popen(['lava-triangle.exe'], **subprocess_null)
-        time.sleep(args.app_caching + 5)
-        wsh.AppActivate('lava triangle')
+        subprocess.Popen(['bin\\lava-triangle.exe'], **subprocess_null)
 
-        for active_trial in range(1, args.trials + 1):
-            print(f'Currently benchmarking: CPU-{active_thread}-Trial-{active_trial}/{args.trials}...')
+        if cache_trials > 0:
+            for trial in range(1, cache_trials + 1):
+                log(f'CPU {active_thread} - Cache Trial: {trial}/{cache_trials}')
+                time.sleep(duration + 5)
 
-            if xperf: 
-                subprocess.run([xperf_location, '-on', 'base+interrupt+dpc'])
+        for trial in range(1, trials + 1):
+            file_name = f'CPU-{active_thread}-Trial-{trial}'
+            log(f'CPU {active_thread} - Recording Trial: {trial}/{trials}')
+
+            if xperf: subprocess.run([xperf_path, '-on', 'base+interrupt+dpc'])
 
             try:
-                subprocess.run(['PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{args.duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'], timeout=args.duration + 5, **subprocess_null)
+                subprocess.run(['bin\\PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{output_path}\\CSVs\\{file_name}.csv'], timeout=duration + 5, **subprocess_null)
             except subprocess.TimeoutExpired:
                 pass
 
-            if not os.path.exists(f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{active_trial}.csv'):
+            if not os.path.exists(f'{output_path}\\CSVs\\{file_name}.csv'):
                 raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
     
             if xperf:
-                subprocess.run([xperf_location, '-stop'], **subprocess_null)
-                subprocess.run([xperf_location, '-i', 'C:\\kernel.etl', '-o', f'{working_dir}\\xperf\\CPU-{active_thread}-Trial-{active_trial}.txt', '-a', 'dpcisr'])
+                subprocess.run([xperf_path, '-stop'], **subprocess_null)
+                subprocess.run([xperf_path, '-i', 'C:\\kernel.etl', '-o', f'{output_path}\\xperf\\{file_name}.txt', '-a', 'dpcisr'])
 
-        kill_processes()
+        kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
         CSVs = []
-        for trial in range(1, args.trials + 1):
-            CSV = f'{working_dir}\\raw\\CPU-{active_thread}-Trial-{trial}.csv'
+        for trial in range(1, trials + 1):
+            CSV = f'{output_path}\\CSVs\\{file_name}.csv'
             CSVs.append(pandas.read_csv(CSV))
             aggregated = pandas.concat(CSVs)
-            aggregated.to_csv(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', index=False)
+            aggregated.to_csv(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv', index=False)
         
         frametimes = []
-        with open(f'{working_dir}\\aggregated\\CPU-{active_thread}-Aggregated.csv', 'r') as f:
+        with open(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv', 'r') as f:
             for row in csv.DictReader(f):
                 if row['MsBetweenPresents'] is not None:
                     frametimes.append(float(row['MsBetweenPresents']))
@@ -251,7 +239,6 @@ def main():
     os.system('color')
     os.system('cls')
     os.system('mode 300, 1000')
-
     apply_affinity('delete')
 
     try:
@@ -281,11 +268,14 @@ def main():
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
         > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
+
     '''
 
     print(print_info)
     print(tabulate(main_table, headers='firstrow', tablefmt='fancy_grid', floatfmt='.2f'), '\n')
     print(print_result_info)
+
+    os.system('cmd.exe /k')
 
 if __name__ == '__main__':
     main()
