@@ -199,7 +199,7 @@ def main():
 
         CSVs = []
         for trial in range(1, trials + 1):
-            CSV = f'{output_path}\\CSVs\\{file_name}.csv'
+            CSV = f'{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv'
             CSVs.append(pandas.read_csv(CSV))
             aggregated = pandas.concat(CSVs)
             aggregated.to_csv(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv', index=False)
