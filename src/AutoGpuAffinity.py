@@ -198,6 +198,7 @@ def main():
 
         kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
+    for active_thread in range(0, threads, iterator):
         CSVs = []
         for trial in range(1, trials + 1):
             CSV = f'{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv'
