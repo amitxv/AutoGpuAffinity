@@ -168,7 +168,7 @@ def main():
     if xperf: subprocess.run([xperf_path, '-stop'], **subprocess_null)
     kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
-    for active_thread in range(0, trials, iterator):
+    for active_thread in range(0, threads, iterator):
         apply_affinity('write', active_thread)
         time.sleep(5)
         subprocess.Popen(['bin\\lava-triangle.exe'], **subprocess_null)
