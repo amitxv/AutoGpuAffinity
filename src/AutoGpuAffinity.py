@@ -127,8 +127,10 @@ def main():
 
     if threads > cores:
         HT = True
+        iterator = 2
     else:
         HT = False
+        iterator = 1
 
     if dpcisr != 0 and os.path.exists(xperf_path):
         xperf = True
@@ -166,8 +168,7 @@ def main():
     if xperf: subprocess.run([xperf_path, '-stop'], **subprocess_null)
     kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
-    active_thread = 0
-    while active_thread < threads:
+    for active_thread in range(0, trials, iterator):
         apply_affinity('write', active_thread)
         time.sleep(5)
         subprocess.Popen(['bin\\lava-triangle.exe'], **subprocess_null)
@@ -227,11 +228,6 @@ def main():
             for value in (1, 0.1, 0.01, 0.005):
                 data.append(f'{calc(frametime_data, metric, value):.2f}')
         main_table.append(data)
-
-        if HT:
-            active_thread += 2
-        else:
-            active_thread += 1
 
     if os.path.exists('C:\\kernel.etl'):
         os.remove('C:\\kernel.etl')
