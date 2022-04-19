@@ -102,7 +102,7 @@ def log(msg):
     print(f'[{time.strftime("%H:%M")}] CLI: {msg}')
 
 def main():
-    version = 4.0
+    version = 4.2
 
     config = {}
     with open('config.txt', 'r') as f:
