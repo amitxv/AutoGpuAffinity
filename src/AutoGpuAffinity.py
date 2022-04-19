@@ -273,7 +273,5 @@ def main():
     print(tabulate(main_table, headers='firstrow', tablefmt='fancy_grid', floatfmt='.2f'), '\n')
     print(print_result_info)
 
-    os.system('cmd.exe /k')
-
 if __name__ == '__main__':
     main()

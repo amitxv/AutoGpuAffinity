@@ -25,7 +25,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases).
 
-- Run ``AutoGpuAffinity.exe`` through the command-line and press enter when ready.
+- Run ``AutoGpuAffinity.exe`` through the command-line and press enter when ready. If you double-click instead of running in the CLI, then the program will close after benchmarking and you will not be able to see the table of results.
 
 - After the tool has benchmarked each core, a table will be displayed with the results.
 
