@@ -190,6 +190,7 @@ def main():
                 pass
 
             if not os.path.exists(f'{output_path}\\CSVs\\{file_name}.csv'):
+                kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
                 raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
     
             if xperf:
