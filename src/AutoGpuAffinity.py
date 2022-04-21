@@ -64,8 +64,7 @@ def apply_affinity(action, thread=None):
         elif action == 'delete':
             delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
             delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
-        subprocess.run(['pnputil', '/disable-device', gpu_id], **subprocess_null)
-        subprocess.run(['pnputil', '/enable-device', gpu_id], **subprocess_null)
+        subprocess.run(['bin\\restart64.exe', '/q'])
 
 def create_lava_cfg():
     lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
