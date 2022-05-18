@@ -1,3 +1,4 @@
+from __future__ import annotations
 import psutil
 import wmi
 import winreg
@@ -14,51 +15,49 @@ import platform
 gpu_info = wmi.WMI().Win32_VideoController()
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
-def kill_processes(*targets):
+def kill_processes(*targets: str) -> None:
     for p in psutil.process_iter():
         if p.name() in targets:
             p.kill()
 
-def calc(frametime_data, metric, value=None):
+def calc(frametime_data: dict, metric: str, value: float=-1) -> float | None:
     if metric == 'Max':
         return 1000 / frametime_data['min']
     elif metric == 'Avg':
         return 1000 / (frametime_data['sum'] / frametime_data['len'])
     elif metric == 'Min':
         return 1000 / frametime_data['max']
-    elif metric == 'Percentile':
+    elif metric == 'Percentile' and value > -1:
         return 1000 / frametime_data['frametimes'][math.ceil(value / 100 * frametime_data['len']) - 1]
-    elif metric == 'Lows':
+    elif metric == 'Lows' and value > -1:
         current_total = 0
         for present in frametime_data['frametimes']:
             current_total += present
             if current_total >= value / 100 * frametime_data['sum']:
                 return 1000 / present
 
-def apply_affinity(action, thread=None):
-    def write_key(path, value_name, data_type, value_data):
-        with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
-            winreg.SetValueEx(key, value_name, 0, data_type, value_data)
+def write_key(path: str, value_name: str, data_type: int, value_data: int | bytes) -> None:
+    with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
+        winreg.SetValueEx(key, value_name, 0, data_type, value_data)  # type: ignore
 
-    def delete_key(path, value_name):
-        try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
-                try:
-                    winreg.DeleteValue(key, value_name)
-                except FileNotFoundError:
-                    pass
-        except FileNotFoundError:
-            pass
+def delete_key(path: str, value_name: str) -> None:
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
+            try:
+                winreg.DeleteValue(key, value_name)
+            except FileNotFoundError:
+                pass
+    except FileNotFoundError:
+        pass
 
-    if thread is not None:
-        dec_affinity = 0
-        dec_affinity |= 1 << thread
-        bin_affinity = bin(dec_affinity).replace('0b', '')
-        le_hex = int(bin_affinity, 2).to_bytes(8, 'little').rstrip(b'\x00')
-
+def apply_affinity(action: str, thread: int=-1) -> None:
     for item in gpu_info:
         gpu_id = item.PnPDeviceID
-        if action == 'write':
+        if action == 'write' and thread > -1:
+            dec_affinity = 0
+            dec_affinity |= 1 << thread
+            bin_affinity = bin(dec_affinity).replace('0b', '')
+            le_hex = int(bin_affinity, 2).to_bytes(8, 'little').rstrip(b'\x00')
             write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
             write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, le_hex)
         elif action == 'delete':
@@ -66,7 +65,7 @@ def apply_affinity(action, thread=None):
             delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
         subprocess.run(['bin\\restart64.exe', '/q'])
 
-def create_lava_cfg():
+def create_lava_cfg() -> None:
     lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
     try:
         os.makedirs(lavatriangle_folder)
@@ -97,10 +96,10 @@ def create_lava_cfg():
         for i in lavatriangle_content:
             f.write(f'{i}\n')
 
-def log(msg):
+def log(msg: str) -> None:
     print(f'[{time.strftime("%H:%M")}] CLI: {msg}')
 
-def main():
+def main() -> None:
     version = 4.2
 
     config = {}
@@ -136,7 +135,7 @@ def main():
     else:
         xperf = False
 
-    estimated = (5 + (cache_trials * (duration+ 5)) + (trials * (duration + 5))) * cores
+    estimated = (10 + (cache_trials * (duration+ 5)) + (trials * (duration + 5))) * cores
     output_path = f'captures\\AutoGpuAffinity-{time.strftime("%d%m%y%H%M%S")}'
     print_info = f'''
     AutoGpuAffinity v{version} Command Line
@@ -171,6 +170,7 @@ def main():
         apply_affinity('write', active_thread)
         time.sleep(5)
         subprocess.Popen(['bin\\lava-triangle.exe'], **subprocess_null)
+        time.sleep(5)
 
         if cache_trials > 0:
             for trial in range(1, cache_trials + 1):
@@ -248,7 +248,7 @@ def main():
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
-        row_index = ''
+        row_index = 0
         for row in range(1, len(main_table)):
             fps = float(main_table[row][column])
             if fps > highest_fps:
