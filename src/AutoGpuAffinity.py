@@ -64,7 +64,7 @@ def apply_affinity(action: str, thread: int=-1) -> None:
             delete_key(policy_path, 'DevicePolicy')
             delete_key(policy_path, 'AssignmentSetOverride')
 
-        subprocess.run(['bin\\restart64.exe', '/q'])
+        subprocess.run(['bin\\restart64\\restart64.exe', '/q'])
 
 def create_lava_cfg() -> None:
     lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
@@ -174,7 +174,7 @@ def main() -> None:
     for active_thread in range(0, threads, iterator):
         apply_affinity('write', active_thread)
         time.sleep(5)
-        subprocess.Popen(['bin\\lava-triangle.exe'], **subprocess_null)
+        subprocess.Popen(['bin\\liblava\\lava-triangle.exe'], **subprocess_null)
         time.sleep(5)
 
         if cache_trials > 0:
@@ -191,7 +191,7 @@ def main() -> None:
 
             try:
                 subprocess.run([
-                    'bin\\PresentMon.exe', 
+                    'bin\\PresentMon\\PresentMon.exe', 
                     '-stop_existing_session', 
                     '-no_top', 
                     '-verbose', 
