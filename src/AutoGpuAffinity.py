@@ -52,26 +52,25 @@ def delete_key(path: str, value_name: str) -> None:
 
 def apply_affinity(action: str, thread: int=-1) -> None:
     for item in gpu_info:
-        gpu_id = item.PnPDeviceID
+        policy_path = f'SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy'
         if action == 'write' and thread > -1:
             dec_affinity = 0
             dec_affinity |= 1 << thread
             bin_affinity = bin(dec_affinity).replace('0b', '')
             le_hex = int(bin_affinity, 2).to_bytes(8, 'little').rstrip(b'\x00')
-            write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy', 4, 4)
-            write_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride', 3, le_hex)
+            write_key(policy_path, 'DevicePolicy', 4, 4)
+            write_key(policy_path, 'AssignmentSetOverride', 3, le_hex)
         elif action == 'delete':
-            delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'DevicePolicy')
-            delete_key(f'SYSTEM\\ControlSet001\\Enum\\{gpu_id}\\Device Parameters\\Interrupt Management\\Affinity Policy', 'AssignmentSetOverride')
+            delete_key(policy_path, 'DevicePolicy')
+            delete_key(policy_path, 'AssignmentSetOverride')
+
         subprocess.run(['bin\\restart64.exe', '/q'])
 
 def create_lava_cfg() -> None:
     lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
-    try:
-        os.makedirs(lavatriangle_folder)
-    except FileExistsError:
-        pass
+    os.makedirs(lavatriangle_folder, exist_ok=True)
     lavatriangle_config = f'{lavatriangle_folder}\\window.json'
+
     if os.path.exists(lavatriangle_config):
         os.remove(lavatriangle_config)
 
@@ -91,7 +90,6 @@ def create_lava_cfg() -> None:
         '    }',
         '}'
     ]
-
     with open(lavatriangle_config, 'a') as f:
         for i in lavatriangle_content:
             f.write(f'{i}\n')
@@ -124,16 +122,16 @@ def main() -> None:
     cores = psutil.cpu_count(logical=False)
 
     if threads > cores:
-        HT = True
+        has_ht = True
         iterator = 2
     else:
-        HT = False
+        has_ht = False
         iterator = 1
 
     if dpcisr != 0 and os.path.exists(xperf_path):
-        xperf = True
+        has_xperf = True
     else:
-        xperf = False
+        has_xperf = False
 
     estimated = (10 + (cache_trials * (duration+ 5)) + (trials * (duration + 5))) * cores
     output_path = f'captures\\AutoGpuAffinity-{time.strftime("%d%m%y%H%M%S")}'
@@ -144,8 +142,8 @@ def main() -> None:
         Trial Duration: {duration} sec
         Cores: {cores}
         Threads: {threads}
-        Hyperthreading/SMT: {HT}
-        Log dpc/isr with xperf: {xperf}
+        Hyperthreading/SMT: {has_ht}
+        Log dpc/isr with xperf: {has_xperf}
         Cache trials: {cache_trials}
         Time for completion: {estimated/60:.2f} min
         Session Working directory: \\{output_path}\\
@@ -157,13 +155,20 @@ def main() -> None:
 
     os.mkdir(output_path)
     os.mkdir(f'{output_path}\\CSVs')
-    if xperf: os.mkdir(f'{output_path}\\xperf')
+    if has_xperf: 
+        os.mkdir(f'{output_path}\\xperf')
+
 
     main_table = []
-    main_table.append(['', 'Max', 'Avg', 'Min', '1 %ile', '0.1 %ile', '0.01 %ile', '0.005 %ile' , '1% Low', '0.1% Low', '0.01% Low', '0.005% Low'])
+    main_table.append([
+        '', 'Max', 'Avg', 'Min', 
+        '1 %ile', '0.1 %ile', '0.01 %ile','0.005 %ile', 
+        '1% Low', '0.1% Low', '0.01% Low', '0.005% Low'
+    ])
 
     # kill all processes before loop
-    if xperf: subprocess.run([xperf_path, '-stop'], **subprocess_null)
+    if has_xperf: 
+        subprocess.run([xperf_path, '-stop'], **subprocess_null)
     kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
     for active_thread in range(0, threads, iterator):
@@ -181,10 +186,21 @@ def main() -> None:
             file_name = f'CPU-{active_thread}-Trial-{trial}'
             log(f'CPU {active_thread} - Recording Trial: {trial}/{trials}')
 
-            if xperf: subprocess.run([xperf_path, '-on', 'base+interrupt+dpc'])
+            if has_xperf: 
+                subprocess.run([xperf_path, '-on', 'base+interrupt+dpc'])
 
             try:
-                subprocess.run(['bin\\PresentMon.exe', '-stop_existing_session', '-no_top', '-verbose', '-timed', f'{duration}', '-process_name', 'lava-triangle.exe', '-output_file', f'{output_path}\\CSVs\\{file_name}.csv'], timeout=duration + 5, **subprocess_null)
+                subprocess.run([
+                    'bin\\PresentMon.exe', 
+                    '-stop_existing_session', 
+                    '-no_top', 
+                    '-verbose', 
+                    '-timed', str(duration), 
+                    '-process_name', 'lava-triangle.exe', 
+                    '-output_file', f'{output_path}\\CSVs\\{file_name}.csv',
+                    ], 
+                    timeout=duration + 5, **subprocess_null
+                )
             except subprocess.TimeoutExpired:
                 pass
 
@@ -192,9 +208,14 @@ def main() -> None:
                 kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
                 raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
     
-            if xperf:
+            if has_xperf:
                 subprocess.run([xperf_path, '-stop'], **subprocess_null)
-                subprocess.run([xperf_path, '-i', 'C:\\kernel.etl', '-o', f'{output_path}\\xperf\\{file_name}.txt', '-a', 'dpcisr'])
+                subprocess.run([
+                    xperf_path, 
+                    '-i', 'C:\\kernel.etl', 
+                    '-o', f'{output_path}\\xperf\\{file_name}.txt',
+                    '-a', 'dpcisr'
+                    ])
 
         kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
@@ -240,11 +261,11 @@ def main() -> None:
 
     try:
         if int(platform.release()) >= 10:
-            highest_fps_color = True
+            apply_highest_fps_color = True
         else:
-            highest_fps_color = False
+            apply_highest_fps_color = False
     except:
-        highest_fps_color = False
+        apply_highest_fps_color = False
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
@@ -254,14 +275,15 @@ def main() -> None:
             if fps > highest_fps:
                 highest_fps = fps
                 row_index = row
-        if highest_fps_color:
+        if apply_highest_fps_color:
             new_value = colored(f'*{float(main_table[row_index][column]):.2f}', 'green')
         else:
             new_value  = f'*{float(main_table[row_index][column]):.2f}'
         main_table[row_index][column] = new_value
 
     print_result_info = f'''
-        > Drag and drop the aggregated data (located in the working directory) into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
+        > Drag and drop the aggregated data (located in the working directory) \
+    into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
         > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
