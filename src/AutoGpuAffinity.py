@@ -114,6 +114,9 @@ def main() -> None:
     dpcisr = int(config['dpcisr'])
     xperf_path = str(config['xperf_path'])
     cache_trials = int(config['cache_trials'])
+    load_afterburner = int(config['load_afterburner'])
+    afterburner_path = str(config['afterburner_path'])
+    afterburner_profile = int(config['afterburner_profile'])
 
     if trials <= 0 or cache_trials < 0 or duration <= 0:
         raise ValueError('invalid trials, cache_trials or duration in config')
@@ -133,7 +136,12 @@ def main() -> None:
     else:
         has_xperf = False
 
-    estimated = (10 + (cache_trials * (duration+ 5)) + (trials * (duration + 5))) * cores
+    if load_afterburner != 0 and os.path.exists(afterburner_path):
+        has_afterburner = True
+    else:
+        has_afterburner = False
+
+    estimated = (10 + (7 if has_afterburner else 0) + (cache_trials * (duration + 5)) + (trials * (duration + 5))) * cores
     output_path = f'captures\\AutoGpuAffinity-{time.strftime("%d%m%y%H%M%S")}'
     print_info = f'''
     AutoGpuAffinity v{version} Command Line
@@ -144,6 +152,7 @@ def main() -> None:
         Threads: {threads}
         Hyperthreading/SMT: {has_ht}
         Log dpc/isr with xperf: {has_xperf}
+        Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
         Time for completion: {estimated/60:.2f} min
         Session Working directory: \\{output_path}\\
@@ -157,7 +166,6 @@ def main() -> None:
     os.mkdir(f'{output_path}\\CSVs')
     if has_xperf: 
         os.mkdir(f'{output_path}\\xperf')
-
 
     main_table = []
     main_table.append([
@@ -174,6 +182,15 @@ def main() -> None:
     for active_thread in range(0, threads, iterator):
         apply_affinity('write', active_thread)
         time.sleep(5)
+
+        if has_afterburner:
+            log(f'Loading Afterburner Profile {afterburner_profile}')
+            try:
+                subprocess.run([afterburner_path, f'-Profile{afterburner_profile}'], timeout=7)
+            except subprocess.TimeoutExpired:
+                pass
+            kill_processes('MSIAfterburner.exe')
+
         subprocess.Popen(['bin\\liblava\\lava-triangle.exe'], **subprocess_null)
         time.sleep(5)
 

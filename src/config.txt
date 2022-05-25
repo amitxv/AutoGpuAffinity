@@ -13,3 +13,13 @@ xperf_path=C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\xp
 
 // number of trials to execute to build cache
 cache_trials=1
+
+// open msi afterburner, used for reapplying a profile per driver restart to maintain overclocks
+// upon runtime, if MSIAfterburner.exe is not found this setting evaluates to 0
+load_afterburner=0
+
+// msi afterburner path excluding quotes
+afterburner_path=C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe
+
+// select msi afterburner profile to load per driver restart
+afterburner_profile=1
