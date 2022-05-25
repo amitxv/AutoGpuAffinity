@@ -1,24 +1,24 @@
 from __future__ import annotations
-import psutil
-import wmi
 import winreg
 import os
 import time
 import subprocess
-import pandas
 import csv
+import platform
 import math
+import pandas
 from termcolor import colored
 from tabulate import tabulate
-import platform
+import psutil
+import wmi
 
 gpu_info = wmi.WMI().Win32_VideoController()
 subprocess_null = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
 def kill_processes(*targets: str) -> None:
-    for p in psutil.process_iter():
-        if p.name() in targets:
-            p.kill()
+    for process in psutil.process_iter():
+        if process.name() in targets:
+            process.kill()
 
 def calc(frametime_data: dict, metric: str, value: float=-1) -> float | None:
     if metric == 'Max':
@@ -28,7 +28,7 @@ def calc(frametime_data: dict, metric: str, value: float=-1) -> float | None:
     elif metric == 'Min':
         return 1000 / frametime_data['max']
     elif metric == 'Percentile' and value > -1:
-        return 1000 / frametime_data['frametimes'][math.ceil(value / 100 * frametime_data['len']) - 1]
+        return 1000 / frametime_data['frametimes'][math.ceil(value / 100 * frametime_data['len'])-1]
     elif metric == 'Lows' and value > -1:
         current_total = 0
         for present in frametime_data['frametimes']:
@@ -42,7 +42,8 @@ def write_key(path: str, value_name: str, data_type: int, value_data: int | byte
 
 def delete_key(path: str, value_name: str) -> None:
     try:
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, 
+                            winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
             try:
                 winreg.DeleteValue(key, value_name)
             except FileNotFoundError:
@@ -64,7 +65,7 @@ def apply_affinity(action: str, thread: int=-1) -> None:
             delete_key(policy_path, 'DevicePolicy')
             delete_key(policy_path, 'AssignmentSetOverride')
 
-        subprocess.run(['bin\\restart64\\restart64.exe', '/q'])
+        subprocess.run(['bin\\restart64\\restart64.exe', '/q'], check=False)
 
 def create_lava_cfg() -> None:
     lavatriangle_folder = f'{os.environ["USERPROFILE"]}\\AppData\\Roaming\\liblava\\lava triangle'
@@ -90,7 +91,7 @@ def create_lava_cfg() -> None:
         '    }',
         '}'
     ]
-    with open(lavatriangle_config, 'a') as f:
+    with open(lavatriangle_config, 'a', encoding='UTF-8') as f:
         for i in lavatriangle_content:
             f.write(f'{i}\n')
 
@@ -101,14 +102,14 @@ def main() -> None:
     version = 4.4
 
     config = {}
-    with open('config.txt', 'r') as f:
+    with open('config.txt', 'r', encoding='UTF-8') as f:
         for line in f:
             if '//' not in line:
                 line = line.strip('\n')
                 setting, equ, value = line.rpartition('=')
                 if setting != '' and value != '':
                     config[setting] = value
-          
+
     trials = int(config['trials'])
     duration = int(config['duration'])
     dpcisr = int(config['dpcisr'])
@@ -131,17 +132,14 @@ def main() -> None:
         has_ht = False
         iterator = 1
 
-    if dpcisr != 0 and os.path.exists(xperf_path):
-        has_xperf = True
-    else:
-        has_xperf = False
+    has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
-    if load_afterburner != 0 and os.path.exists(afterburner_path):
-        has_afterburner = True
-    else:
-        has_afterburner = False
+    has_afterburner = load_afterburner != 0 and os.path.exists(afterburner_path)
 
-    estimated = (10 + (7 if has_afterburner else 0) + (cache_trials * (duration + 5)) + (trials * (duration + 5))) * cores
+    seconds_per_trial = (10 + (7 if has_afterburner else 0) 
+                + (cache_trials * (duration + 5)) 
+                + (trials * (duration + 5)))
+
     output_path = f'captures\\AutoGpuAffinity-{time.strftime("%d%m%y%H%M%S")}'
     print_info = f'''
     AutoGpuAffinity v{version} Command Line
@@ -154,7 +152,7 @@ def main() -> None:
         Log dpc/isr with xperf: {has_xperf}
         Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
-        Time for completion: {estimated/60:.2f} min
+        Time for completion: {(seconds_per_trial * cores)/60:.2f} min
         Session Working directory: \\{output_path}\\
     '''
     print(print_info)
@@ -164,19 +162,19 @@ def main() -> None:
 
     os.mkdir(output_path)
     os.mkdir(f'{output_path}\\CSVs')
-    if has_xperf: 
+    if has_xperf:
         os.mkdir(f'{output_path}\\xperf')
 
     main_table = []
     main_table.append([
-        '', 'Max', 'Avg', 'Min', 
-        '1 %ile', '0.1 %ile', '0.01 %ile','0.005 %ile', 
+        '', 'Max', 'Avg', 'Min',
+        '1 %ile', '0.1 %ile', '0.01 %ile','0.005 %ile',
         '1% Low', '0.1% Low', '0.01% Low', '0.005% Low'
     ])
 
     # kill all processes before loop
-    if has_xperf: 
-        subprocess.run([xperf_path, '-stop'], **subprocess_null)
+    if has_xperf:
+        subprocess.run([xperf_path, '-stop'], **subprocess_null, check=False)
     kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
     for active_thread in range(0, threads, iterator):
@@ -186,7 +184,8 @@ def main() -> None:
         if has_afterburner:
             log(f'Loading Afterburner Profile {afterburner_profile}')
             try:
-                subprocess.run([afterburner_path, f'-Profile{afterburner_profile}'], timeout=7)
+                subprocess.run([afterburner_path, f'-Profile{afterburner_profile}'], 
+                                timeout=7, check=False)
             except subprocess.TimeoutExpired:
                 pass
             kill_processes('MSIAfterburner.exe')
@@ -203,36 +202,39 @@ def main() -> None:
             file_name = f'CPU-{active_thread}-Trial-{trial}'
             log(f'CPU {active_thread} - Recording Trial: {trial}/{trials}')
 
-            if has_xperf: 
-                subprocess.run([xperf_path, '-on', 'base+interrupt+dpc'])
+            if has_xperf:
+                subprocess.run([xperf_path, '-on', 'base+interrupt+dpc'], check=False)
 
             try:
                 subprocess.run([
-                    'bin\\PresentMon\\PresentMon.exe', 
-                    '-stop_existing_session', 
-                    '-no_top', 
-                    '-verbose', 
-                    '-timed', str(duration), 
-                    '-process_name', 'lava-triangle.exe', 
+                    'bin\\PresentMon\\PresentMon.exe',
+                    '-stop_existing_session',
+                    '-no_top',
+                    '-verbose',
+                    '-timed', str(duration),
+                    '-process_name', 'lava-triangle.exe',
                     '-output_file', f'{output_path}\\CSVs\\{file_name}.csv',
-                    ], 
-                    timeout=duration + 5, **subprocess_null
+                    ],
+                    timeout=duration + 5, **subprocess_null, check=False
                 )
             except subprocess.TimeoutExpired:
                 pass
 
             if not os.path.exists(f'{output_path}\\CSVs\\{file_name}.csv'):
                 kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
-                raise FileNotFoundError('CSV log unsuccessful, this is due to a missing dependency or windows component.')
-    
+                raise FileNotFoundError(
+                    'CSV log unsuccessful, this is due to a missing dependency/ windows component.'
+                )
+
             if has_xperf:
-                subprocess.run([xperf_path, '-stop'], **subprocess_null)
+                subprocess.run([xperf_path, '-stop'], **subprocess_null, check=False)
                 subprocess.run([
-                    xperf_path, 
-                    '-i', 'C:\\kernel.etl', 
+                    xperf_path,
+                    '-i', 'C:\\kernel.etl',
                     '-o', f'{output_path}\\xperf\\{file_name}.txt',
                     '-a', 'dpcisr'
-                    ])
+                    ], check=False
+                )
 
         kill_processes('xperf.exe', 'lava-triangle.exe', 'PresentMon.exe')
 
@@ -242,10 +244,12 @@ def main() -> None:
             CSV = f'{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv'
             CSVs.append(pandas.read_csv(CSV))
             aggregated = pandas.concat(CSVs)
-            aggregated.to_csv(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv', index=False)
-        
+            aggregated.to_csv(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv',
+                                index=False)
+
         frametimes = []
-        with open(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv', 'r') as f:
+        with open(f'{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv', 'r',
+                    encoding='UTF-8') as f:
             for row in csv.DictReader(f):
                 if row['MsBetweenPresents'] is not None:
                     frametimes.append(float(row['MsBetweenPresents']))
@@ -276,13 +280,7 @@ def main() -> None:
     os.system('mode 300, 1000')
     apply_affinity('delete')
 
-    try:
-        if int(platform.release()) >= 10:
-            apply_highest_fps_color = True
-        else:
-            apply_highest_fps_color = False
-    except:
-        apply_highest_fps_color = False
+    apply_highest_fps_color = int(platform.release()) >= 10
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
@@ -298,7 +296,7 @@ def main() -> None:
             new_value  = f'*{float(main_table[row_index][column]):.2f}'
         main_table[row_index][column] = new_value
 
-    print_result_info = f'''
+    print_result_info = '''
         > Drag and drop the aggregated data (located in the working directory) \
     into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
         > Affinities for all GPUs have been reset to the Windows default (none).
