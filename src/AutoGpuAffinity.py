@@ -98,7 +98,7 @@ def log(msg: str) -> None:
     print(f'[{time.strftime("%H:%M")}] CLI: {msg}')
 
 def main() -> None:
-    version = 4.3
+    version = 4.4
 
     config = {}
     with open('config.txt', 'r') as f:
