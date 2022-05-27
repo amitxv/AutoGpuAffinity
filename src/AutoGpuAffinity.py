@@ -42,6 +42,7 @@ def calc(frametime_data: dict, metric: str, value: float = -1) -> float:
             current_total += present
             if current_total >= value / 100 * frametime_data["sum"]:
                 result = present
+                break
     return 1000 / result
 
 
@@ -57,10 +58,7 @@ def delete_key(path: str, value_name: str) -> None:
     """Delete keys in Windows Registry"""
     try:
         with winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            path,
-            0,
-            winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
+            winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY
         ) as key:
             try:
                 winreg.DeleteValue(key, value_name)
@@ -129,11 +127,7 @@ def start_afterburner(path: str, profile: int) -> None:
     """Starts afterburner and loads a profile"""
     log(f"Loading Afterburner Profile {profile}")
     try:
-        subprocess.run(
-            [path, f"-Profile{profile}"],
-            timeout=7,
-            check=False,
-        )
+        subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False,)
     except subprocess.TimeoutExpired:
         pass
     kill_processes("MSIAfterburner.exe")
@@ -210,13 +204,11 @@ def main() -> None:
         os.mkdir(f"{output_path}\\xperf")
 
     main_table = []
-    # fmt: off
     main_table.append([
         "", "Max", "Avg", "Min",
-        "1 %ile", "0.1 %ile", "0.01 %ile","0.005 %ile",
+        "1 %ile", "0.1 %ile", "0.01 %ile", "0.005 %ile",
         "1% Low", "0.1% Low", "0.01% Low", "0.005% Low"
     ])
-    # fmt: on
 
     # kill all processes before loop
     if has_xperf:
@@ -246,7 +238,6 @@ def main() -> None:
                 subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
 
             try:
-                # fmt: off
                 subprocess.run([
                     "bin\\PresentMon\\PresentMon.exe",
                     "-stop_existing_session",
@@ -256,7 +247,6 @@ def main() -> None:
                     "-process_name", "lava-triangle.exe",
                     "-output_file", f"{output_path}\\CSVs\\{file_name}.csv",
                     ], timeout=duration + 5, **subprocess_null, check=False)
-                # fmt: on
             except subprocess.TimeoutExpired:
                 pass
 
@@ -268,14 +258,12 @@ def main() -> None:
 
             if has_xperf:
                 subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
-                # fmt: off
                 subprocess.run([
                     xperf_path,
                     "-i", "C:\\kernel.etl",
                     "-o", f"{output_path}\\xperf\\{file_name}.txt",
                     "-a", "dpcisr"
                     ], check=False)
-                # fmt: on
 
         kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
@@ -291,9 +279,7 @@ def main() -> None:
 
         frametimes = []
         with open(
-            f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv",
-            "r",
-            encoding="UTF-8",
+            f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv", "r", encoding="UTF-8"
         ) as f:
             for row in csv.DictReader(f):
                 if row["MsBetweenPresents"] is not None:
@@ -343,7 +329,7 @@ def main() -> None:
 
     print_result_info = """
         > Drag and drop the aggregated data (located in the working directory) \
-    into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
+into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
         > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
