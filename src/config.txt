@@ -4,15 +4,15 @@ trials=3
 // duration of each trial in seconds
 duration=30
 
+// number of trials to execute to build cache
+cache_trials=1
+
 // dpc/isr logging with xperf
 // upon runtime, if xperf.exe is not found this setting evaluates to 0
 dpcisr=1
 
 // xperf path excluding quotes
 xperf_path=C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\xperf.exe
-
-// number of trials to execute to build cache
-cache_trials=1
 
 // open msi afterburner, used for reapplying a profile per driver restart to maintain overclocks
 // upon runtime, if MSIAfterburner.exe is not found this setting evaluates to 0
@@ -23,3 +23,8 @@ afterburner_path=C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe
 
 // select msi afterburner profile to load per driver restart
 afterburner_profile=1
+
+// input cpus to benchmark in the array delimited by commas
+// e.g to only benchmark CPU 1, CPU 3 and CPU 6 use [1,3,6] (order does not matter)
+// empty array is default and implies all cores should be benchmarked
+custom_cores=[]

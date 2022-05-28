@@ -33,9 +33,7 @@ def calc(frametime_data: dict, metric: str, value: float = -1) -> float:
     elif metric == "Min":
         result = frametime_data["max"]
     elif metric == "Percentile" and value > -1:
-        result = frametime_data["frametimes"][
-            math.ceil(value / 100 * frametime_data["len"]) - 1
-        ]
+        result = frametime_data["frametimes"][math.ceil(value / 100 * frametime_data["len"]) - 1]
     elif metric == "Lows" and value > -1:
         current_total = 0
         for present in frametime_data["frametimes"]:
@@ -46,9 +44,7 @@ def calc(frametime_data: dict, metric: str, value: float = -1) -> float:
     return 1000 / result
 
 
-def write_key(
-    path: str, value_name: str, data_type: int, value_data: int | bytes
-) -> None:
+def write_key(path: str, value_name: str, data_type: int, value_data: int | bytes) -> None:
     """Write keys to Windows Registry"""
     with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
         winreg.SetValueEx(key, value_name, 0, data_type, value_data)  # type: ignore
@@ -57,9 +53,7 @@ def write_key(
 def delete_key(path: str, value_name: str) -> None:
     """Delete keys in Windows Registry"""
     try:
-        with winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY
-        ) as key:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
             try:
                 winreg.DeleteValue(key, value_name)
             except FileNotFoundError:
@@ -88,9 +82,7 @@ def apply_affinity(action: str, thread: int = -1) -> None:
 
 def create_lava_cfg() -> None:
     """Creates the lava-triangle configuration file"""
-    lavatriangle_folder = (
-        f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
-    )
+    lavatriangle_folder = (f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle")
     os.makedirs(lavatriangle_folder, exist_ok=True)
     lavatriangle_config = f"{lavatriangle_folder}\\window.json"
 
@@ -154,30 +146,28 @@ def main() -> None:
     load_afterburner = int(config["load_afterburner"])
     afterburner_path = str(config["afterburner_path"])
     afterburner_profile = int(config["afterburner_profile"])
+    custom_cores = config["custom_cores"]
+
+    total_cpus = psutil.cpu_count()
 
     if trials <= 0 or cache_trials < 0 or duration <= 0:
         raise ValueError("invalid trials, cache_trials or duration in config")
 
-    threads = psutil.cpu_count()
-    cores = psutil.cpu_count(logical=False)
-
-    if threads > cores:
-        has_ht = True
-        iterator = 2
+    if custom_cores[0] == "[" and custom_cores[-1] == "]":
+        custom_cores = custom_cores[1:-1].replace(" ", "").split(",")
+        if custom_cores != [""]:
+            for i in custom_cores:
+                if not 0 <= int(i) <= total_cpus:
+                    raise ValueError("invalid custom_cores value in config")
     else:
-        has_ht = False
-        iterator = 1
+        raise ValueError("surrounding brackets for custom_cores value not found")
 
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
     has_afterburner = load_afterburner != 0 and os.path.exists(afterburner_path)
 
-    seconds_per_trial = (
-        10
-        + (7 if has_afterburner else 0)
-        + (cache_trials * (duration + 5))
-        + (trials * (duration + 5))
-    )
+    seconds_per_trial = 10 + (7 if has_afterburner else 0) + (cache_trials + trials) * (duration + 5)
+    estimated_time = seconds_per_trial * (total_cpus if custom_cores == [""] else len(custom_cores))
 
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
     print_info = f"""
@@ -185,13 +175,12 @@ def main() -> None:
 
         Trials: {trials}
         Trial Duration: {duration} sec
-        Cores: {cores}
-        Threads: {threads}
-        Hyperthreading/SMT: {has_ht}
+        Benchmark CPUs: {"All" if custom_cores == [""] else ",".join(custom_cores)}
+        Total CPUs: {total_cpus}
         Log dpc/isr with xperf: {has_xperf}
         Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
-        Time for completion: {(seconds_per_trial * cores)/60:.2f} min
+        Time for completion: {estimated_time/60:.2f} min
         Session Working directory: \\{output_path}\\
     """
     print(print_info)
@@ -215,7 +204,11 @@ def main() -> None:
         subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
-    for active_thread in range(0, threads, iterator):
+    for active_thread in range(0, total_cpus):
+
+        if custom_cores != [""] and str(active_thread) not in custom_cores:
+            continue
+
         apply_affinity("write", active_thread)
         time.sleep(5)
 
@@ -267,7 +260,11 @@ def main() -> None:
 
         kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
-    for active_thread in range(0, threads, iterator):
+    for active_thread in range(0, total_cpus):
+
+        if custom_cores != [""] and str(active_thread) not in custom_cores:
+            continue
+
         CSVs = []
         for trial in range(1, trials + 1):
             CSV = f"{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv"
@@ -306,12 +303,13 @@ def main() -> None:
     if os.path.exists("C:\\kernel.etl"):
         os.remove("C:\\kernel.etl")
 
-    os.system("color")
+    apply_highest_fps_color = int(platform.release()) >= 10
+
+    if apply_highest_fps_color:
+        os.system('color')
     os.system("cls")
     os.system("mode 300, 1000")
     apply_affinity("delete")
-
-    apply_highest_fps_color = int(platform.release()) >= 10
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
@@ -336,10 +334,7 @@ into https://boringboredom.github.io/Frame-Time-Analysis for a graphical represe
     """
 
     print(print_info)
-    print(
-        tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"),
-        "\n",
-    )
+    print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"), "\n",)
     print(print_result_info)
 
 
