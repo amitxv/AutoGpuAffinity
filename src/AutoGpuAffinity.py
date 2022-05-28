@@ -156,6 +156,7 @@ def main() -> None:
     if custom_cores[0] == "[" and custom_cores[-1] == "]":
         custom_cores = custom_cores[1:-1].replace(" ", "").split(",")
         if custom_cores != [""]:
+            custom_cores = list(dict.fromkeys(custom_cores))
             for i in custom_cores:
                 if not 0 <= int(i) <= total_cpus:
                     raise ValueError("invalid custom_cores value in config")
