@@ -1,0 +1,6 @@
+pyinstaller==5.1
+pandas==1.4.2
+termcolor==1.1.0
+tabulate==0.8.9
+psutil==5.9.0
+WMI==1.5.1

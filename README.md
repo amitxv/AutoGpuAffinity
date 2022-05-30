@@ -6,8 +6,6 @@ CLI tool to automatically benchmark the most performant core based on lows/perce
 
 Contact: https://twitter.com/amitxv
 
-
-
 ## Disclaimer
 I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests.
 
