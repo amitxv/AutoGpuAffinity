@@ -177,7 +177,8 @@ def main() -> None:
         Trials: {trials}
         Trial Duration: {duration} sec
         Benchmark CPUs: {"All" if custom_cores == [""] else ",".join(custom_cores)}
-        Total CPUs: {total_cpus}
+        Total CPUs: {total_cpus - 1}
+        Hyperthreading: {total_cpus > psutil.cpu_count(logical=False)}
         Log dpc/isr with xperf: {has_xperf}
         Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
