@@ -26,3 +26,7 @@ afterburner_path=C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe
 // e.g to only benchmark CPU 1, CPU 3 and CPU 6 use [1,3,6] (order does not matter)
 // empty array is default and implies all cores should be benchmarked
 custom_cores=[]
+
+// determines whether color should be enabled in the console
+// only supported on Windows 10+
+colored_output=1

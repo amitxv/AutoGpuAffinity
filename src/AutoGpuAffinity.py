@@ -4,10 +4,8 @@ import os
 import time
 import subprocess
 import csv
-import platform
 import math
 import pandas
-from termcolor import colored
 from tabulate import tabulate
 import psutil
 import wmi
@@ -145,7 +143,8 @@ def main() -> None:
     cache_trials = int(config["cache_trials"])
     afterburner_path = str(config["afterburner_path"])
     afterburner_profile = int(config["afterburner_profile"])
-    custom_cores = config["custom_cores"]
+    custom_cores = str(config["custom_cores"])
+    colored_output = int(config["colored_output"])
 
     total_cpus = psutil.cpu_count()
 
@@ -304,10 +303,14 @@ def main() -> None:
     if os.path.exists("C:\\kernel.etl"):
         os.remove("C:\\kernel.etl")
 
-    apply_highest_fps_color = int(platform.release()) >= 10
+    if colored_output:
+        green = "\x1b[92m"
+        default = "\x1b[0m"
+        os.system("color")
+    else:
+        green = ""
+        default = ""
 
-    if apply_highest_fps_color:
-        os.system('color')
     os.system("cls")
     os.system("mode 300, 1000")
     apply_affinity("delete")
@@ -320,10 +323,7 @@ def main() -> None:
             if fps > highest_fps:
                 highest_fps = fps
                 row_index = row
-        if apply_highest_fps_color:
-            new_value = colored(f"*{float(main_table[row_index][column]):.2f}", "green")
-        else:
-            new_value = f"*{float(main_table[row_index][column]):.2f}"
+        new_value = f"{green}*{float(main_table[row_index][column]):.2f}{default}"
         main_table[row_index][column] = new_value
 
     print_result_info = """
