@@ -125,7 +125,7 @@ def start_afterburner(path: str, profile: int) -> None:
 
 def main() -> None:
     """Main application logic"""
-    version = 5.0
+    version = 6.0
 
     config = {}
     with open("config.txt", "r", encoding="UTF-8") as f:
