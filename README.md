@@ -28,7 +28,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
     
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases).
 
-- NOTE: Set ``colored_output=0`` in config.txt if not Windows 10+ to prevent junk appearing in the results table.
+- NOTE: Set ``colored_output=0`` in config.txt on Windows 7/8/8.1 to prevent junk appearing in the results table.
 
 - CD to the extracted directory and run ``AutoGpuAffinity.exe`` through the command-line and press enter when ready. If you double-click instead of running in the CLI, then the program will close after benchmarking and you will not be able to see the table of results.
 
