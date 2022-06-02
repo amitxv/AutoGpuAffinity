@@ -119,7 +119,7 @@ def start_afterburner(path: str, profile: int) -> None:
     """Starts afterburner and loads a profile"""
     log(f"Loading Afterburner Profile {profile}")
     try:
-        subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False,)
+        subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False)
     except subprocess.TimeoutExpired:
         pass
     kill_processes("MSIAfterburner.exe")
@@ -143,7 +143,6 @@ def main() -> None:
     dpcisr = int(config["dpcisr"])
     xperf_path = str(config["xperf_path"])
     cache_trials = int(config["cache_trials"])
-    load_afterburner = int(config["load_afterburner"])
     afterburner_path = str(config["afterburner_path"])
     afterburner_profile = int(config["afterburner_profile"])
     custom_cores = config["custom_cores"]
@@ -165,7 +164,7 @@ def main() -> None:
 
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
-    has_afterburner = load_afterburner != 0 and os.path.exists(afterburner_path)
+    has_afterburner = 1 <= afterburner_profile <= 5 and os.path.exists(afterburner_path)
 
     seconds_per_trial = 10 + (7 if has_afterburner else 0) + (cache_trials + trials) * (duration + 5)
     estimated_time = seconds_per_trial * (total_cpus if custom_cores == [""] else len(custom_cores))

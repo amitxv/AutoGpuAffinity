@@ -24,7 +24,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 - To maintain overclock settings with MSI Afterburner throughout the tests:
 
     - save the desired settings to a profile (e.g profile 1)
-    - set load_afterburner=1 and configure the path along with the profile to load in config.txt
+    - configure the path along with the profile to load in config.txt
     
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases).
 
