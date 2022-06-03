@@ -123,7 +123,7 @@ def start_afterburner(path: str, profile: int) -> None:
     kill_processes("MSIAfterburner.exe")
 
 
-def main() -> None:
+def main() -> int:
     """Main application logic"""
     version = 6.0
 
@@ -149,7 +149,8 @@ def main() -> None:
     total_cpus = psutil.cpu_count()
 
     if trials <= 0 or cache_trials < 0 or duration <= 0:
-        raise ValueError("invalid trials, cache_trials or duration in config")
+        print("error: invalid trials, cache_trials or duration in config")
+        return 1
 
     if custom_cores[0] == "[" and custom_cores[-1] == "]":
         custom_cores = custom_cores[1:-1].replace(" ", "").split(",")
@@ -157,9 +158,11 @@ def main() -> None:
             custom_cores = list(dict.fromkeys(custom_cores))
             for i in custom_cores:
                 if not 0 <= int(i) <= total_cpus:
-                    raise ValueError("invalid custom_cores value in config")
+                    print("error: invalid custom_cores value in config")
+                    return 1
     else:
-        raise ValueError("surrounding brackets for custom_cores value not found")
+        print("error: surrounding brackets for custom_cores value not found")
+        return 1
 
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
@@ -245,9 +248,10 @@ def main() -> None:
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
                 kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
-                raise FileNotFoundError(
-                    "CSV log unsuccessful, this is due to a missing dependency/ windows component."
+                print(
+                    "error: CSV log unsuccessful, this is due to a missing dependency/ windows component."
                 )
+                return 1
 
             if has_xperf:
                 subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
@@ -337,7 +341,9 @@ into https://boringboredom.github.io/Frame-Time-Analysis for a graphical represe
     print(print_info)
     print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"), "\n",)
     print(print_result_info)
+    
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
