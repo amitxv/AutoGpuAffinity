@@ -5,6 +5,7 @@ import time
 import subprocess
 import csv
 import math
+import sys
 import pandas
 from tabulate import tabulate
 import psutil
@@ -126,6 +127,14 @@ def start_afterburner(path: str, profile: int) -> None:
 def main() -> int:
     """Main application logic"""
     version = 6.0
+
+    # change directory to location of program
+    program_path = ""
+    if getattr(sys, 'frozen', False):
+        program_path = os.path.dirname(sys.executable)
+    elif __file__:
+        program_path = os.path.dirname(__file__)
+    os.chdir(program_path)
 
     config = {}
     with open("config.txt", "r", encoding="UTF-8") as f:
@@ -339,9 +348,9 @@ into https://boringboredom.github.io/Frame-Time-Analysis for a graphical represe
     print(print_info)
     print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"), "\n",)
     print(print_result_info)
-    
+
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())
