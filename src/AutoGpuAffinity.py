@@ -175,6 +175,7 @@ def main() -> int:
     seconds_per_trial = 10 + (7 if has_afterburner else 0) + (cache_trials + trials) * (duration + 5)
     estimated_time = seconds_per_trial * (total_cpus if custom_cores == [""] else len(custom_cores))
 
+    os.makedirs("captures", exist_ok=True)
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
     print_info = f"""
     AutoGpuAffinity v{version} Command Line
