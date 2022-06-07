@@ -109,14 +109,9 @@ def create_lava_cfg() -> None:
             f.write(f"{i}\n")
 
 
-def log(msg: str, status: str) -> None:
-    """Logs messages to the console with a timestamp"""
-    print(f"[{time.strftime('%H:%M')}] [{status}]: {msg}")
-
-
 def start_afterburner(path: str, profile: int) -> None:
     """Starts afterburner and loads a profile"""
-    log(f"loading afterburner profile {profile}", "info")
+    print(f"loading afterburner profile {profile}", "info")
     try:
         subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False)
     except subprocess.TimeoutExpired:
@@ -158,7 +153,7 @@ def main() -> int:
     total_cpus = psutil.cpu_count()
 
     if trials <= 0 or cache_trials < 0 or duration <= 0:
-        log("invalid trials, cache_trials or duration in config", "error")
+        print("invalid trials, cache_trials or duration in config", "error")
         return 1
 
     if custom_cores[0] == "[" and custom_cores[-1] == "]":
@@ -167,7 +162,7 @@ def main() -> int:
             custom_cores = list(dict.fromkeys(custom_cores))
             for i in custom_cores:
                 if not 0 <= int(i) <= total_cpus:
-                    log("invalid custom_cores value in config", "error")
+                    print("invalid custom_cores value in config", "error")
                     return 1
     else:
         print("surrounding brackets for custom_cores value not found", "error")
@@ -232,12 +227,12 @@ def main() -> int:
 
         if cache_trials > 0:
             for trial in range(1, cache_trials + 1):
-                log(f"CPU {active_thread} - Cache Trial: {trial}/{cache_trials}", "info")
+                print(f"CPU {active_thread} - Cache Trial: {trial}/{cache_trials}", "info")
                 time.sleep(duration + 5)
 
         for trial in range(1, trials + 1):
             file_name = f"CPU-{active_thread}-Trial-{trial}"
-            log(f"CPU {active_thread} - Recording Trial: {trial}/{trials}", "info")
+            print(f"CPU {active_thread} - Recording Trial: {trial}/{trials}", "info")
 
             if has_xperf:
                 subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
@@ -257,7 +252,7 @@ def main() -> int:
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
                 kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
-                log("CSV log unsuccessful, this is due to a missing dependency/ windows component", "error")
+                print("CSV log unsuccessful, this is due to a missing dependency/ windows component", "error")
                 return 1
 
             if has_xperf:
