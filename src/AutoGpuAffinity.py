@@ -121,7 +121,7 @@ def start_afterburner(path: str, profile: int) -> None:
 
 def main() -> int:
     """Main application logic"""
-    version = 6.0
+    version = "0.6.1"
 
     # change directory to location of program
     program_path = ""
