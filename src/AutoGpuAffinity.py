@@ -6,7 +6,6 @@ import subprocess
 import csv
 import math
 import sys
-import pandas
 from tabulate import tabulate
 import psutil
 import wmi
@@ -117,6 +116,23 @@ def start_afterburner(path: str, profile: int) -> None:
     except subprocess.TimeoutExpired:
         pass
     kill_processes("MSIAfterburner.exe")
+
+
+def aggregate(files: list, output_file: str) -> None:
+    """Aggregates PresentMon CSV files"""
+    aggregated = []
+    for file in files:
+        with open(file, "r", encoding="UTF-8") as csv_f:
+            lines = csv_f.readlines()
+            aggregated.extend(lines)
+
+    with open(output_file, "a", encoding="UTF-8") as csv_f:
+        column_names = aggregated[0]
+        csv_f.write(column_names)
+
+        for line in aggregated:
+            if line != column_names:
+                csv_f.write(line)
 
 
 def main() -> int:
@@ -274,12 +290,10 @@ def main() -> int:
 
         CSVs = []
         for trial in range(1, trials + 1):
-            CSV = f"{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv"
-            CSVs.append(pandas.read_csv(CSV))
-            aggregated = pandas.concat(CSVs)
-            aggregated.to_csv(
-                f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv", index=False
-            )
+            CSVs.append(f"{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv")
+
+        aggregated_csv = f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv"
+        aggregate(CSVs, aggregated_csv)
 
         frametimes = []
         with open(
