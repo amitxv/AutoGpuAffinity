@@ -120,7 +120,7 @@ def start_afterburner(path: str, profile: int) -> None:
 
 
 def main() -> int:
-    """Main application logic"""
+    """CLI Entrypoint"""
     version = "0.6.1"
 
     # change directory to location of program
