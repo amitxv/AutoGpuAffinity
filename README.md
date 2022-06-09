@@ -19,7 +19,9 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 
 ## Usage
 
-- [Windows ADK](https://docs.microsoft.com/en-us/windows-hardware/get-started/adk-install) is required for DPC/ISR logging with xperf.
+- Windows ADK must be installed for DPC/ISR logging with xperf (this is entirely optional).
+    - [ADK for Windows 8.1+](https://docs.microsoft.com/en-us/windows-hardware/get-started/adk-install)
+    - [ADK for Windows 7](http://download.microsoft.com/download/A/6/A/A6AC035D-DA3F-4F0C-ADA4-37C8E5D34E3D/setup/WinSDKPerformanceToolKit_amd64/wpt_x64.msi)
 
 - To maintain overclock settings with MSI Afterburner throughout the tests:
 
