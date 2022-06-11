@@ -172,7 +172,7 @@ def main() -> int:
         print("invalid trials, cache_trials or duration in config")
         return 1
 
-    if custom_cores[0] == "[" and custom_cores[-1] == "]":
+    if custom_cores.startswith("[") and custom_cores.endswith("]"):
         custom_cores = custom_cores[1:-1].replace(" ", "").split(",")
         if custom_cores != [""]:
             custom_cores = list(dict.fromkeys(custom_cores))
