@@ -10,9 +10,6 @@ from tabulate import tabulate
 import psutil
 import wmi
 
-gpu_info = wmi.WMI().Win32_VideoController()
-subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
-
 
 def kill_processes(*targets: str) -> None:
     """Kill windows processes"""
@@ -60,7 +57,7 @@ def delete_key(path: str, value_name: str) -> None:
         pass
 
 
-def apply_affinity(action: str, thread: int = -1) -> None:
+def apply_affinity(gpu_info: list, action: str, thread: int = -1) -> None:
     """Apply interrupt affinity policy to graphics driver"""
     for item in gpu_info:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy"
@@ -184,6 +181,9 @@ def main() -> int:
         print("surrounding brackets for custom_cores value not found")
         return 1
 
+    videocontroller_data = wmi.WMI().Win32_VideoController()
+    subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
     has_afterburner = 1 <= afterburner_profile <= 5 and os.path.exists(afterburner_path)
@@ -233,7 +233,7 @@ def main() -> int:
         if custom_cores != [""] and str(active_thread) not in custom_cores:
             continue
 
-        apply_affinity("write", active_thread)
+        apply_affinity(videocontroller_data, "write", active_thread)
         time.sleep(5)
 
         if has_afterburner:
@@ -334,7 +334,7 @@ def main() -> int:
 
     os.system("cls")
     os.system("mode 300, 1000")
-    apply_affinity("delete")
+    apply_affinity(videocontroller_data, "delete")
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
