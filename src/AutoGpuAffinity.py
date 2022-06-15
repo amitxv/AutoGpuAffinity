@@ -9,6 +9,9 @@ import sys
 from tabulate import tabulate
 import psutil
 import wmi
+import ctypes
+
+ntdll = ctypes.WinDLL('ntdll.dll')
 
 
 def kill_processes(*targets: str) -> None:
@@ -132,6 +135,27 @@ def aggregate(files: list, output_file: str) -> None:
                 csv_f.write(line)
 
 
+def timer_resolution(enabled: bool) -> None:
+    """
+    Sets the kernel timer-resolution to 1ms
+    
+    This function does not affect other processes on Windows 10 2004+
+    """
+    min_res = ctypes.c_ulong()
+    max_res = ctypes.c_ulong()
+    curr_res = ctypes.c_ulong()
+
+    ntdll.NtQueryTimerResolution(
+        ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res)
+    )
+
+    if max_res.value <= 10000:
+        if ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) != 0:
+            print("info: unable to set timer-resolution")
+    else:
+        print("info: 1ms timer-resolution not supported on this system")
+
+
 def main() -> int:
     """CLI Entrypoint"""
     version = "0.6.1"
@@ -216,7 +240,9 @@ def main() -> int:
     """
     print(print_info)
     input("    Press enter to start benchmarking...\n")
+    
     create_lava_cfg()
+    timer_resolution(True)
 
     os.mkdir(output_path)
     os.mkdir(f"{output_path}\\CSVs")
@@ -342,6 +368,7 @@ def main() -> int:
     os.system("cls")
     os.system("mode 300, 1000")
     apply_affinity(videocontroller_data, "delete")
+    timer_resolution(False)
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
