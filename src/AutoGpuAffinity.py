@@ -6,10 +6,10 @@ import subprocess
 import csv
 import math
 import sys
+import ctypes
 from tabulate import tabulate
 import psutil
 import wmi
-import ctypes
 
 ntdll = ctypes.WinDLL('ntdll.dll')
 
