@@ -8,17 +8,16 @@ import math
 import sys
 import ctypes
 from tabulate import tabulate
-import psutil
 import wmi
 
-ntdll = ctypes.WinDLL('ntdll.dll')
+ntdll = ctypes.WinDLL("ntdll.dll")
+subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 
 
 def kill_processes(*targets: str) -> None:
     """Kill windows processes"""
-    for process in psutil.process_iter():
-        if process.name() in targets:
-            process.kill()
+    for process in targets:
+        subprocess.call(["taskkill", "/F", "/IM", process], **subprocess_null)
 
 
 def calc(frametime_data: dict, metric: str, value: float = -1) -> float:
@@ -138,7 +137,7 @@ def aggregate(files: list, output_file: str) -> None:
 def timer_resolution(enabled: bool) -> None:
     """
     Sets the kernel timer-resolution to 1ms
-    
+
     This function does not affect other processes on Windows 10 2004+
     """
     min_res = ctypes.c_ulong()
@@ -162,7 +161,7 @@ def main() -> int:
 
     # change directory to location of program
     program_path = ""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         program_path = os.path.dirname(sys.executable)
     elif __file__:
         program_path = os.path.dirname(__file__)
@@ -187,8 +186,10 @@ def main() -> int:
     custom_cores = str(config["custom_cores"])
     colored_output = int(config["colored_output"])
 
-    total_cpus = psutil.cpu_count()
-    total_threads = psutil.cpu_count(logical=False)
+    total_cpus = os.cpu_count()
+    if total_cpus is None:
+        print("error: unable to get cpu count")
+        return 1
 
     if trials <= 0 or cache_trials < 0 or duration <= 0:
         print("error: invalid trials, cache_trials or duration in config")
@@ -213,7 +214,6 @@ def main() -> int:
         return 1
 
     videocontroller_data = wmi.WMI().Win32_VideoController()
-    subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
@@ -231,7 +231,6 @@ def main() -> int:
         Trial Duration: {duration} sec
         Benchmark CPUs: {"All" if custom_cores == [] else str(custom_cores).strip("[]")}
         Total CPUs: {total_cpus - 1}
-        Hyperthreading: {total_cpus > total_threads}
         Log dpc/isr with xperf: {has_xperf}
         Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
@@ -240,7 +239,7 @@ def main() -> int:
     """
     print(print_info)
     input("    Press enter to start benchmarking...\n")
-    
+
     create_lava_cfg()
     timer_resolution(True)
 
