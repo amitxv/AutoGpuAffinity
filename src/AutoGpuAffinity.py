@@ -107,7 +107,7 @@ def create_lava_cfg() -> None:
 
 def start_afterburner(path: str, profile: int) -> None:
     """Starts afterburner and loads a profile"""
-    print(f"loading afterburner profile {profile}")
+    print(f"info: loading afterburner profile {profile}")
     try:
         subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False)
     except subprocess.TimeoutExpired:
@@ -164,21 +164,28 @@ def main() -> int:
     colored_output = int(config["colored_output"])
 
     total_cpus = psutil.cpu_count()
+    total_threads = psutil.cpu_count(logical=False)
 
     if trials <= 0 or cache_trials < 0 or duration <= 0:
-        print("invalid trials, cache_trials or duration in config")
+        print("error: invalid trials, cache_trials or duration in config")
         return 1
 
     if custom_cores.startswith("[") and custom_cores.endswith("]"):
+        # strip [] and remove white spaces from string then split values into list
         custom_cores = custom_cores[1:-1].replace(" ", "").split(",")
-        if custom_cores != [""]:
-            custom_cores = list(dict.fromkeys(custom_cores))
+        # remove duplicates in list
+        custom_cores = list(dict.fromkeys(custom_cores))
+        # convert contents of list into list[int]
+        custom_cores = [int(x) for x in custom_cores if x != ""]
+        # sort list in ascending order
+        custom_cores.sort()
+        if custom_cores != []:
             for i in custom_cores:
-                if not 0 <= int(i) <= total_cpus:
-                    print("invalid custom_cores value in config")
+                if not 0 <= i <= (total_cpus - 1):
+                    print("error: invalid custom_cores value in config")
                     return 1
     else:
-        print("surrounding brackets for custom_cores value not found")
+        print("error: surrounding brackets for custom_cores value not found")
         return 1
 
     videocontroller_data = wmi.WMI().Win32_VideoController()
@@ -189,7 +196,7 @@ def main() -> int:
     has_afterburner = 1 <= afterburner_profile <= 5 and os.path.exists(afterburner_path)
 
     seconds_per_trial = 10 + (7 if has_afterburner else 0) + (cache_trials + trials) * (duration + 5)
-    estimated_time = seconds_per_trial * (total_cpus if custom_cores == [""] else len(custom_cores))
+    estimated_time = seconds_per_trial * (total_cpus if custom_cores == [] else len(custom_cores))
 
     os.makedirs("captures", exist_ok=True)
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
@@ -198,9 +205,9 @@ def main() -> int:
 
         Trials: {trials}
         Trial Duration: {duration} sec
-        Benchmark CPUs: {"All" if custom_cores == [""] else ",".join(custom_cores)}
+        Benchmark CPUs: {"All" if custom_cores == [] else str(custom_cores).strip("[]")}
         Total CPUs: {total_cpus - 1}
-        Hyperthreading: {total_cpus > psutil.cpu_count(logical=False)}
+        Hyperthreading: {total_cpus > total_threads}
         Log dpc/isr with xperf: {has_xperf}
         Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
@@ -230,7 +237,7 @@ def main() -> int:
 
     for active_thread in range(0, total_cpus):
 
-        if custom_cores != [""] and str(active_thread) not in custom_cores:
+        if custom_cores != [] and active_thread not in custom_cores:
             continue
 
         apply_affinity(videocontroller_data, "write", active_thread)
@@ -244,12 +251,12 @@ def main() -> int:
 
         if cache_trials > 0:
             for trial in range(1, cache_trials + 1):
-                print(f"CPU {active_thread} - Cache Trial: {trial}/{cache_trials}")
+                print(f"info: cpu {active_thread} - cache trial: {trial}/{cache_trials}")
                 time.sleep(duration + 5)
 
         for trial in range(1, trials + 1):
             file_name = f"CPU-{active_thread}-Trial-{trial}"
-            print(f"CPU {active_thread} - Recording Trial: {trial}/{trials}")
+            print(f"info: cpu {active_thread} - recording trial: {trial}/{trials}")
 
             if has_xperf:
                 subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
@@ -269,7 +276,7 @@ def main() -> int:
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
                 kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
-                print("CSV log unsuccessful, this is due to a missing dependency/ windows component")
+                print("error: csv log unsuccessful, this is due to a missing dependency/ windows component")
                 return 1
 
             if has_xperf:
@@ -285,7 +292,7 @@ def main() -> int:
 
     for active_thread in range(0, total_cpus):
 
-        if custom_cores != [""] and str(active_thread) not in custom_cores:
+        if custom_cores != [] and active_thread not in custom_cores:
             continue
 
         CSVs = []
