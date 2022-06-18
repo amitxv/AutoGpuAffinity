@@ -247,6 +247,8 @@ def main() -> int:
     os.mkdir(f"{output_path}\\CSVs")
     if has_xperf:
         os.mkdir(f"{output_path}\\xperf")
+        os.mkdir(f"{output_path}\\xperf\\merged")
+        os.mkdir(f"{output_path}\\xperf\\raw")
 
     main_table = []
     main_table.append([
@@ -300,18 +302,22 @@ def main() -> int:
                 pass
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
+                if has_xperf:
+                    subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
                 kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
                 print("error: csv log unsuccessful, this is due to a missing dependency/ windows component")
                 return 1
 
             if has_xperf:
-                subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
                 subprocess.run([
                     xperf_path,
-                    "-i", "C:\\kernel.etl",
-                    "-o", f"{output_path}\\xperf\\{file_name}.txt",
-                    "-a", "dpcisr"
-                    ], check=False)
+                    "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
+                ], **subprocess_null, check=False)
+         
+                if not os.path.exists(f"{output_path}\\xperf\\raw\\{file_name}.etl"):
+                    kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
+                    print("error: xperf etl log unsuccessful")
+                    return 1
 
         kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
@@ -326,6 +332,26 @@ def main() -> int:
 
         aggregated_csv = f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv"
         aggregate(CSVs, aggregated_csv)
+
+        if has_xperf:
+            # merge etls
+            ETLs = []
+            for trial in range(1, trials + 1):
+                ETLs.append(f"{output_path}\\xperf\\raw\\CPU-{active_thread}-Trial-{trial}.etl")
+
+            subprocess.run([
+                xperf_path,
+                "-merge", *ETLs,
+                f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl"
+            ], check=False)
+
+            # generate a report based on the merged etl
+            subprocess.run([
+                xperf_path,
+                "-i", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl",
+                "-o", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
+                "-a", "dpcisr"
+                ], check=False)            
 
         frametimes = []
         with open(
@@ -353,6 +379,7 @@ def main() -> int:
                 data.append(f"{calc(frametime_data, metric, value):.2f}")
         main_table.append(data)
 
+    # usually gets created with xperf -stop
     if os.path.exists("C:\\kernel.etl"):
         os.remove("C:\\kernel.etl")
 
