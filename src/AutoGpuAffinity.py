@@ -356,6 +356,7 @@ def main() -> int:
             # generate a report based on the merged etl
             subprocess.run([
                 xperf_path,
+                "-quiet",
                 "-i", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl",
                 "-o", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
                 "-a", "dpcisr"
