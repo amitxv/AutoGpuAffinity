@@ -110,7 +110,6 @@ def create_lava_cfg() -> None:
 
 def start_afterburner(path: str, profile: int) -> None:
     """Starts afterburner and loads a profile"""
-    print(f"info: loading afterburner profile {profile}")
     try:
         subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False)
     except subprocess.TimeoutExpired:
@@ -135,7 +134,7 @@ def aggregate(files: list, output_file: str) -> None:
                 csv_f.write(line)
 
 
-def timer_resolution(enabled: bool) -> None:
+def timer_resolution(enabled: bool) -> int:
     """
     Sets the kernel timer-resolution to 1ms
 
@@ -149,11 +148,12 @@ def timer_resolution(enabled: bool) -> None:
         ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res)
     )
 
-    if max_res.value <= 10000:
-        if ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) != 0:
-            print("info: unable to set timer-resolution")
+    if max_res.value <= 10000 or ntdll.NtSetTimerResolution(
+        10000, int(enabled), ctypes.byref(curr_res)
+    ) != 0:
+        return 1
     else:
-        print("info: 1ms timer-resolution not supported on this system")
+        return 0
 
 
 def main() -> int:
@@ -242,9 +242,13 @@ def main() -> int:
     print(print_info)
     input("    Press enter to start benchmarking...\n")
 
+    print("info: creating liblava config file")
     create_lava_cfg()
-    timer_resolution(True)
 
+    if timer_resolution(True) != 0:
+        print("info: unable to set timer-resolution")
+
+    print("info: creating working directory")
     os.mkdir(output_path)
     os.mkdir(f"{output_path}\\CSVs")
     if has_xperf:
@@ -269,10 +273,12 @@ def main() -> int:
         if custom_cores != [] and active_thread not in custom_cores:
             continue
 
+        print("info: applying affinity")
         apply_affinity(videocontroller_data, "write", active_thread)
         time.sleep(5)
 
         if has_afterburner:
+            print(f"info: loading afterburner profile {afterburner_profile}")
             start_afterburner(afterburner_path, afterburner_profile)
 
         subprocess.Popen(["bin\\liblava\\lava-triangle.exe"], **subprocess_null)
@@ -406,7 +412,9 @@ def main() -> int:
     os.system("cls")
     os.system("mode 300, 1000")
     apply_affinity(videocontroller_data, "delete")
-    timer_resolution(False)
+
+    if timer_resolution(False) != 0:
+        print("info: unable to set timer-resolution")
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
