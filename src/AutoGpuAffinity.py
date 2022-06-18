@@ -7,6 +7,7 @@ import csv
 import math
 import sys
 import ctypes
+import shutil
 from tabulate import tabulate
 import wmi
 
@@ -178,11 +179,12 @@ def main() -> int:
 
     trials = int(config["trials"])
     duration = int(config["duration"])
+    cache_trials = int(config["cache_trials"])
     dpcisr = int(config["dpcisr"])
     xperf_path = str(config["xperf_path"])
-    cache_trials = int(config["cache_trials"])
-    afterburner_path = str(config["afterburner_path"])
+    save_etls = int(config["save_etls"])
     afterburner_profile = int(config["afterburner_profile"])
+    afterburner_path = str(config["afterburner_path"])
     custom_cores = str(config["custom_cores"])
     colored_output = int(config["colored_output"])
 
@@ -313,7 +315,7 @@ def main() -> int:
                     xperf_path,
                     "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
                 ], **subprocess_null, check=False)
-         
+
                 if not os.path.exists(f"{output_path}\\xperf\\raw\\{file_name}.etl"):
                     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
                     print("error: xperf etl log unsuccessful")
@@ -343,7 +345,7 @@ def main() -> int:
                 xperf_path,
                 "-merge", *ETLs,
                 f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl"
-            ], check=False)
+            ], **subprocess_null, check=False)
 
             # generate a report based on the merged etl
             subprocess.run([
@@ -351,7 +353,13 @@ def main() -> int:
                 "-i", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl",
                 "-o", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
                 "-a", "dpcisr"
-                ], check=False)            
+                ], check=False)
+
+            if not save_etls:
+                shutil.move(
+                    f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
+                    f"{output_path}\\xperf"
+                )
 
         frametimes = []
         with open(
@@ -378,6 +386,10 @@ def main() -> int:
             for value in (1, 0.1, 0.01, 0.005):
                 data.append(f"{calc(frametime_data, metric, value):.2f}")
         main_table.append(data)
+
+    if not save_etls:
+        shutil.rmtree(f"{output_path}\\xperf\\raw")
+        shutil.rmtree(f"{output_path}\\xperf\\merged")
 
     # usually gets created with xperf -stop
     if os.path.exists("C:\\kernel.etl"):
