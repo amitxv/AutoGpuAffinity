@@ -148,12 +148,12 @@ def timer_resolution(enabled: bool) -> int:
         ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res)
     )
 
-    if max_res.value <= 10000 or ntdll.NtSetTimerResolution(
+    if max_res.value <= 10000 and ntdll.NtSetTimerResolution(
         10000, int(enabled), ctypes.byref(curr_res)
-    ) != 0:
-        return 1
-    else:
+    ) == 0:
         return 0
+    else:
+        return 1
 
 
 def main() -> int:
@@ -248,7 +248,6 @@ def main() -> int:
     if timer_resolution(True) != 0:
         print("info: unable to set timer-resolution")
 
-    print("info: creating working directory")
     os.mkdir(output_path)
     os.mkdir(f"{output_path}\\CSVs")
     if has_xperf:
@@ -414,8 +413,7 @@ def main() -> int:
     os.system("mode 300, 1000")
     apply_affinity(videocontroller_data, "delete")
 
-    if timer_resolution(False) != 0:
-        print("info: unable to set timer-resolution")
+    timer_resolution(False)
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
