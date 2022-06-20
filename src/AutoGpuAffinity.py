@@ -7,7 +7,6 @@ import csv
 import math
 import sys
 import ctypes
-import shutil
 from tabulate import tabulate
 import wmi
 
@@ -362,10 +361,9 @@ def main() -> int:
                 ], check=False)
 
             if not save_etls:
-                shutil.move(
-                    f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
-                    f"{output_path}\\xperf"
-                )
+                os.remove(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl")
+                for trial in range(1, trials + 1):
+                    os.remove(f"{output_path}\\xperf\\raw\\CPU-{active_thread}-Trial-{trial}.etl")
 
         frametimes = []
         with open(
@@ -392,10 +390,6 @@ def main() -> int:
             for value in (1, 0.1, 0.01, 0.005):
                 data.append(f"{calc(frametime_data, metric, value):.2f}")
         main_table.append(data)
-
-    if not save_etls:
-        shutil.rmtree(f"{output_path}\\xperf\\raw")
-        shutil.rmtree(f"{output_path}\\xperf\\merged")
 
     # usually gets created with xperf -stop
     if os.path.exists("C:\\kernel.etl"):
