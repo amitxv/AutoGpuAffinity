@@ -157,7 +157,7 @@ def timer_resolution(enabled: bool) -> int:
 
 def main() -> int:
     """CLI Entrypoint"""
-    version = "0.8.0"
+    version = "0.9.0"
 
     # change directory to location of program
     program_path = ""
