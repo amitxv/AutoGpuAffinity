@@ -157,7 +157,7 @@ def timer_resolution(enabled: bool) -> int:
 
 def main() -> int:
     """CLI Entrypoint"""
-    version = "0.7.0"
+    version = "0.8.0"
 
     # change directory to location of program
     program_path = ""
@@ -261,6 +261,13 @@ def main() -> int:
         "1% Low", "0.1% Low", "0.01% Low", "0.005% Low"
     ])
 
+    if has_xperf:
+        dpc_table = []
+        dpc_table.append([
+            "", "25 %ile", "50 %ile", "75 %ile", "95 %ile", "96 %ile", "97 %ile", "98 %ile", "99 %ile", "99.99 %ile",
+        ])
+        isr_table = dpc_table.copy()
+
     # kill all processes before loop
     if has_xperf:
         subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
@@ -332,6 +339,9 @@ def main() -> int:
         if custom_cores != [] and active_thread not in custom_cores:
             continue
 
+        # begin aggregating CSVs and ETLs
+        print("info: aggregating data")
+
         CSVs = []
         for trial in range(1, trials + 1):
             CSVs.append(f"{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv")
@@ -365,6 +375,9 @@ def main() -> int:
                 for trial in range(1, trials + 1):
                     os.remove(f"{output_path}\\xperf\\raw\\CPU-{active_thread}-Trial-{trial}.etl")
 
+        # begin parsing frametime data
+        print("info: parsing frametime data")
+
         frametimes = []
         with open(
             f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv", "r", encoding="UTF-8"
@@ -390,6 +403,44 @@ def main() -> int:
             for value in (1, 0.1, 0.01, 0.005):
                 data.append(f"{calc(frametime_data, metric, value):.2f}")
         main_table.append(data)
+
+        # begin parsing dpc/isr data
+
+        if has_xperf:
+            print("info: parsing dpc/isr data")
+            with open(
+                f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt", "r", encoding="UTF-8"
+            ) as report:
+                report_lines = [x.strip("\n") for x in report]
+
+            dpcs = 0
+            for i in range(len(report_lines)):
+                if "for module dxgkrnl.sys" in report_lines[i]:
+                    usec_data = []
+                    dpcs = not dpcs
+                    i += 1
+                    while "Total," not in report_lines[i]:
+                        line = report_lines[i]
+                        line = line.replace(" ", "")
+                        line = line.strip("ElapsedTime,>")
+                        line = line.replace("AND<=", ",")
+                        line = line.replace("usecs", "")
+                        line = line.split(",")[1:-1]
+                        # convert to int
+                        line = [int(x) for x in line]
+                        for _ in range(line[1] + 1):
+                            usec_data.append(line[0])
+                        i += 1
+
+                    length = len(usec_data)
+                    data = []
+                    data.append(f"CPU {active_thread} {'DPCs' if dpcs == 1 else 'ISRs'}")
+                    for metric in (25, 50, 75, 95, 96, 97, 98, 99, 99.99):
+                        data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} usecs")
+                    if dpcs == 1:
+                        dpc_table.append(data)
+                    else:
+                        isr_table.append(data)
 
     # usually gets created with xperf -stop
     if os.path.exists("C:\\kernel.etl"):
@@ -430,6 +481,12 @@ def main() -> int:
 
     print(print_info)
     print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
+
+    if has_xperf:
+        print("\n    DPC and ISR latency data for dxgkrnl.sys:\n")
+        print(tabulate(dpc_table, headers="firstrow", tablefmt="fancy_grid"))
+        print(tabulate(isr_table, headers="firstrow", tablefmt="fancy_grid"))
+
     print(print_result_info)
 
     return 0
