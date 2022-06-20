@@ -348,6 +348,9 @@ def main() -> int:
 
         aggregated_csv = f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv"
         aggregate(CSVs, aggregated_csv)
+        if not os.path.exists(f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv"):
+            print("error: csv aggregation unsuccessful")
+            return 1
 
         if has_xperf:
             # merge etls
@@ -361,6 +364,10 @@ def main() -> int:
                 f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl"
             ], **subprocess_null, check=False)
 
+            if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl"):
+                print("error: etl merge unsuccessful")
+                return 1
+
             # generate a report based on the merged etl
             subprocess.run([
                 xperf_path,
@@ -369,6 +376,10 @@ def main() -> int:
                 "-o", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
                 "-a", "dpcisr"
                 ], check=False)
+
+            if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt"):
+                print("error: unable to generate dpcisr report")
+                return 1
 
             if not save_etls:
                 os.remove(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl")
@@ -434,10 +445,10 @@ def main() -> int:
 
                     length = len(usec_data)
                     data = []
-                    data.append(f"CPU {active_thread} {'DPCs' if dpcs == 1 else 'ISRs'}")
+                    data.append(f"CPU {active_thread} {'DPCs' if dpcs else 'ISRs'}")
                     for metric in (25, 50, 75, 95, 96, 97, 98, 99, 99.99):
                         data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} usecs")
-                    if dpcs == 1:
+                    if dpcs:
                         dpc_table.append(data)
                     else:
                         isr_table.append(data)
