@@ -420,16 +420,16 @@ def main() -> int:
         new_value = f"{green}*{float(main_table[row_index][column]):.2f}{default}"
         main_table[row_index][column] = new_value
 
-    print_result_info = """
-        > Drag and drop the aggregated data (located in the working directory) \
-into https://boringboredom.github.io/Frame-Time-Analysis for a graphical representation of the data.
+    frametime_analysis_url = "https://boringboredom.github.io/Frame-Time-Analysis"
+    print_result_info = f"""
+        > Drag and drop the aggregated CSVs into {frametime_analysis_url} for a graphical representation of the data.
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
         > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
     """
 
     print(print_info)
-    print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"), "\n")
+    print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
     print(print_result_info)
 
     return 0
