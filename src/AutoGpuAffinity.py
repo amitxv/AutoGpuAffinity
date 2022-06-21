@@ -448,7 +448,7 @@ def main() -> int:
                     data = []
                     data.append(f"CPU {active_thread} {'DPCs' if dpcs else 'ISRs'}")
                     for metric in (95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9):
-                        data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} usecs")
+                        data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} μs")
                     if dpcs:
                         dpc_table.append(data)
                     else:
@@ -488,15 +488,31 @@ def main() -> int:
                 new_value = f"{green}*{float(main_table[row][column]):.2f}{default}"
                 main_table[row][column] = new_value
 
+    if has_xperf:
+        for table in [dpc_table, isr_table]:
+            for column in range(1, len(table[0])):
+                lowest_usecs = 9999
+                for row in range(1, len(table)):
+                    usecs = float(table[row][column].strip("<= μs"))
+                    if usecs < lowest_usecs:
+                        lowest_usecs = usecs
+
+                for row in range(1, len(table)):
+                    usecs = float(table[row][column].strip("<= μs"))
+                    if usecs == lowest_usecs:
+                        new_value = f"{green}*<={int(table[row][column].strip('<= μs'))} μs{default}"
+                        table[row][column] = new_value
+
     frametime_analysis_url = "https://boringboredom.github.io/Frame-Time-Analysis"
     print_result_info = f"""
         > Drag and drop the aggregated CSVs into {frametime_analysis_url} for a graphical representation of the data.
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
-        > If you see absurdly low values for 0.005% Lows, you should discard the results and re-run the tool.
+        > If you see absurdly low values for 0.005% lows, you should discard the results and re-run the tool.
     """
 
     print(print_info)
+    print("   FPS/frametime data:\n")
     print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
 
     if has_xperf:
