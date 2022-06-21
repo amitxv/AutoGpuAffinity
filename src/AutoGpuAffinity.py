@@ -264,7 +264,9 @@ def main() -> int:
     if has_xperf:
         dpc_table = []
         dpc_table.append([
-            "", "25 %ile", "50 %ile", "75 %ile", "95 %ile", "96 %ile", "97 %ile", "98 %ile", "99 %ile", "99.99 %ile",
+            "", "95 %ile", "96 %ile", "97 %ile", "98 %ile", "99 %ile",
+            "99.1 %ile", "99.2 %ile", "99.3 %ile", "99.4 %ile", "99.5 %ile", "99.6 %ile",
+            "99.7 %ile", "99.8 %ile", "99.9 %ile"
         ])
         isr_table = dpc_table.copy()
 
@@ -446,7 +448,7 @@ def main() -> int:
                     length = len(usec_data)
                     data = []
                     data.append(f"CPU {active_thread} {'DPCs' if dpcs else 'ISRs'}")
-                    for metric in (25, 50, 75, 95, 96, 97, 98, 99, 99.99):
+                    for metric in (95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9):
                         data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} usecs")
                     if dpcs:
                         dpc_table.append(data)
