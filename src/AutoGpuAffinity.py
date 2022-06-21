@@ -8,10 +8,10 @@ import math
 import sys
 import ctypes
 from tabulate import tabulate
-import wmi
 
 ntdll = ctypes.WinDLL("ntdll.dll")
 subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+enum_pci_path = "SYSTEM\\ControlSet001\\Enum\\PCI"
 
 
 def kill_processes(*targets: str) -> None:
@@ -59,10 +59,24 @@ def delete_key(path: str, value_name: str) -> None:
         pass
 
 
-def apply_affinity(gpu_info: list, action: str, thread: int = -1) -> None:
+def read_value(path: str, value_name: str) -> list | None:
+    """Read keys in Windows Registry"""
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY
+        ) as key:
+            try:
+                return winreg.QueryValueEx(key, value_name)[0]
+            except FileNotFoundError:
+                return None
+    except FileNotFoundError:
+        return None
+
+
+def apply_affinity(instances: list, action: str, thread: int = -1) -> None:
     """Apply interrupt affinity policy to graphics driver"""
-    for item in gpu_info:
-        policy_path = f"SYSTEM\\ControlSet001\\Enum\\{item.PnPDeviceID}\\Device Parameters\\Interrupt Management\\Affinity Policy"
+    for instance in instances:
+        policy_path = f"{enum_pci_path}\\{instance}\\Device Parameters\\Interrupt Management\\Affinity Policy"
         if action == "write" and thread > -1:
             dec_affinity = 0
             dec_affinity |= 1 << thread
@@ -155,6 +169,28 @@ def timer_resolution(enabled: bool) -> int:
         return 1
 
 
+def gpu_instance_paths() -> list:
+    """Returns a list of the device instance paths for all present NVIDIA/AMD GPUs"""
+    dev_inst_path = []
+    # iterate over Enum\PCI\X
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, enum_pci_path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as pci:
+        for a in range(winreg.QueryInfoKey(pci)[0]):
+            pci_subkeys = winreg.EnumKey(pci, a)
+
+            # iterate over Enum\PCI\X\Y
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"{enum_pci_path}\\{pci_subkeys}", 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as subkey:
+                for b in range(winreg.QueryInfoKey(subkey)[0]):
+                    sub_keys = f"{pci_subkeys}\\{winreg.EnumKey(subkey, b)}"
+
+                    # read DeviceDesc inside Enum\PCI\X\Y
+                    driver_desc = read_value(f"{enum_pci_path}\\{sub_keys}", "DeviceDesc")
+                    if driver_desc is not None:
+                        driver_desc = str(driver_desc).upper()
+                        if "NVIDIA_DEV" in driver_desc or ("AMD" in driver_desc and "RADEON" in driver_desc):
+                            dev_inst_path.append(sub_keys)
+    return dev_inst_path
+
+
 def main() -> int:
     """CLI Entrypoint"""
     version = "0.9.0"
@@ -214,7 +250,10 @@ def main() -> int:
         print("error: surrounding brackets for custom_cores value not found")
         return 1
 
-    videocontroller_data = wmi.WMI().Win32_VideoController()
+    instance_paths = gpu_instance_paths()
+    if len(instance_paths) == 0:
+        print("error: no graphics card found")
+        return 1
 
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
@@ -281,7 +320,7 @@ def main() -> int:
             continue
 
         print("info: applying affinity")
-        apply_affinity(videocontroller_data, "write", active_thread)
+        apply_affinity(instance_paths, "write", active_thread)
         time.sleep(5)
 
         if has_afterburner:
@@ -468,7 +507,7 @@ def main() -> int:
 
     os.system("cls")
     os.system("mode 300, 1000")
-    apply_affinity(videocontroller_data, "delete")
+    apply_affinity(instance_paths, "delete")
 
     timer_resolution(False)
 
