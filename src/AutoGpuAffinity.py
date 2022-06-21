@@ -342,7 +342,7 @@ def main() -> int:
             continue
 
         # begin aggregating CSVs and ETLs
-        print("info: aggregating data")
+        print(f"info: cpu {active_thread} - aggregating frametime data")
 
         CSVs = []
         for trial in range(1, trials + 1):
@@ -389,7 +389,7 @@ def main() -> int:
                     os.remove(f"{output_path}\\xperf\\raw\\CPU-{active_thread}-Trial-{trial}.etl")
 
         # begin parsing frametime data
-        print("info: parsing frametime data")
+        print(f"info: cpu {active_thread} - parsing frametime data")
 
         frametimes = []
         with open(
@@ -418,9 +418,8 @@ def main() -> int:
         main_table.append(data)
 
         # begin parsing dpc/isr data
-
         if has_xperf:
-            print("info: parsing dpc/isr data")
+            print(f"info: cpu {active_thread} - parsing dpc/isr data")
             with open(
                 f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt", "r", encoding="UTF-8"
             ) as report:
