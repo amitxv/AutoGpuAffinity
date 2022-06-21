@@ -193,7 +193,7 @@ def gpu_instance_paths() -> list:
 
 def main() -> int:
     """CLI Entrypoint"""
-    version = "0.9.0"
+    version = "0.10.0"
 
     # change directory to location of program
     program_path = ""
