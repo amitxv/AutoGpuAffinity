@@ -474,14 +474,19 @@ def main() -> int:
 
     for column in range(1, len(main_table[0])):
         highest_fps = 0
-        row_index = 0
         for row in range(1, len(main_table)):
             fps = float(main_table[row][column])
             if fps > highest_fps:
                 highest_fps = fps
-                row_index = row
-        new_value = f"{green}*{float(main_table[row_index][column]):.2f}{default}"
-        main_table[row_index][column] = new_value
+
+        # iterate over the entire row again and find matches
+        # this way we can append a * or green text to all duplicate values
+        # as it is only fair to do so
+        for row in range(1, len(main_table)):
+            fps = float(main_table[row][column])
+            if fps == highest_fps:
+                new_value = f"{green}*{float(main_table[row][column]):.2f}{default}"
+                main_table[row][column] = new_value
 
     frametime_analysis_url = "https://boringboredom.github.io/Frame-Time-Analysis"
     print_result_info = f"""
