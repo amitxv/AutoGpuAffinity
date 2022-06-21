@@ -33,3 +33,9 @@ custom_cores=[]
 // determines whether color should be enabled in the console
 // only supported on Windows 10+
 colored_output=1
+
+// liblava config options
+// resolution only customizable if fullscreen=0
+fullscreen=1
+x_res=1920
+y_res=1080

@@ -91,7 +91,7 @@ def apply_affinity(instances: list, action: str, thread: int = -1) -> None:
     subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
 
-def create_lava_cfg() -> None:
+def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None:
     """Creates the lava-triangle configuration file"""
     lavatriangle_folder = (f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle")
     os.makedirs(lavatriangle_folder, exist_ok=True)
@@ -105,12 +105,12 @@ def create_lava_cfg() -> None:
         '    "default": {',
         '        "decorated": true,',
         '        "floating": false,',
-        '        "fullscreen": true,',
-        '        "height": 1080,',
+        f'        "fullscreen": {"true" if fullscr else "false"},',
+        f'        "height": {y_resolution},',
         '        "maximized": false,',
         '        "monitor": 0,',
         '        "resizable": true,',
-        '        "width": 1920,',
+        f'        "width": {x_resolution},',
         '        "x": 0,',
         '        "y": 0',
         "    }",
@@ -222,6 +222,9 @@ def main() -> int:
     afterburner_path = str(config["afterburner_path"])
     custom_cores = str(config["custom_cores"])
     colored_output = int(config["colored_output"])
+    fullscreen = bool(int(config["fullscreen"]))
+    x_res = int(config["x_res"])
+    y_res = int(config["y_res"])
 
     total_cpus = os.cpu_count()
     if total_cpus is None:
@@ -276,12 +279,13 @@ def main() -> int:
         Cache trials: {cache_trials}
         Time for completion: {estimated_time/60:.2f} min
         Session Working directory: \\{output_path}\\
+        Fullscreen: {fullscreen} {f"({x_res}x{y_res})" if not fullscreen else ""}
     """
     print(print_info)
     input("    Press enter to start benchmarking...\n")
 
     print("info: creating liblava config file")
-    create_lava_cfg()
+    create_lava_cfg(fullscreen, x_res, y_res)
 
     if timer_resolution(True) != 0:
         print("info: unable to set timer-resolution")
