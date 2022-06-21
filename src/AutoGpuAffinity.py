@@ -379,6 +379,7 @@ def main() -> int:
 
         kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
+    print("info: begin parsing data, this may take a few minutes...")
     for active_thread in range(0, total_cpus):
 
         if custom_cores != [] and active_thread not in custom_cores:
