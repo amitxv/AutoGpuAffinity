@@ -73,14 +73,23 @@ def read_value(path: str, value_name: str) -> list | None:
         return None
 
 
-def apply_affinity(instances: list, action: str, thread: int = -1) -> None:
-    """Apply interrupt affinity policy to graphics driver"""
+def cpu_to_dec(cpu: int) -> int:
+    """Convert CPU affinity to the decimal representation"""
+    affinity = 0
+    affinity |= 1 << cpu
+    return affinity
+
+
+def apply_affinity(instances: list, action: str, affinity: int = -1) -> None:
+    """
+    Apply interrupt affinity policy to graphics driver
+    
+    Accepts affinity as the decimal representation
+    """
     for instance in instances:
         policy_path = f"{enum_pci_path}\\{instance}\\Device Parameters\\Interrupt Management\\Affinity Policy"
-        if action == "write" and thread > -1:
-            dec_affinity = 0
-            dec_affinity |= 1 << thread
-            bin_affinity = bin(dec_affinity).replace("0b", "")
+        if action == "write" and affinity > -1:
+            bin_affinity = bin(affinity).replace("0b", "")
             le_hex = int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00")
             write_key(policy_path, "DevicePolicy", 4, 4)
             write_key(policy_path, "AssignmentSetOverride", 3, le_hex)
@@ -229,6 +238,7 @@ def main() -> int:
     fullscreen = bool(int(config["fullscreen"]))
     x_res = int(config["x_res"])
     y_res = int(config["y_res"])
+    sync_liblava_affinity = bool(int(config["sync_liblava_affinity"]))
 
     if (total_cpus := os.cpu_count()) is None:
         print("error: unable to get cpu count")
@@ -325,16 +335,27 @@ def main() -> int:
     for cpu in range(0, total_cpus):
         if custom_cores != [] and cpu not in custom_cores:
             continue
+        
+        dec_affinity = cpu_to_dec(cpu)
 
         print("info: applying affinity")
-        apply_affinity(instance_paths, "write", cpu)
+        apply_affinity(instance_paths, "write", dec_affinity)
         time.sleep(5)
 
         if has_afterburner:
             print(f"info: loading afterburner profile {afterburner_profile}")
             start_afterburner(afterburner_path, afterburner_profile)
 
-        subprocess.Popen(["bin\\liblava\\lava-triangle.exe"], **subprocess_null)
+        affinity_args = []
+        if sync_liblava_affinity:
+            affinity_args = ["/affinity", str(dec_affinity)]
+
+        subprocess.call([
+            "start",
+            *affinity_args,
+            "bin\\liblava\\lava-triangle.exe"
+        ], shell=True)
+
         time.sleep(5)
 
         if cache_trials > 0:

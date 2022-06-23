@@ -39,3 +39,9 @@ colored_output=1
 fullscreen=1
 x_res=1920
 y_res=1080
+
+// launch liblava with the same affinity as the gpu
+// setting this to 1 may improve the consistency of results due to thread affinities
+// being restricted to a single core instead of jumping between cores, however overall fps
+// will decrease significantly
+sync_liblava_affinity=0
