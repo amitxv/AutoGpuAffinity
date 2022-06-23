@@ -374,7 +374,6 @@ def main() -> int:
                 "bin\\PresentMon\\PresentMon.exe",
                 "-stop_existing_session",
                 "-no_top",
-                "-verbose",
                 "-timed", str(duration),
                 "-process_name", "lava-triangle.exe",
                 "-output_file", f"{output_path}\\CSVs\\{file_name}.csv",
@@ -466,8 +465,10 @@ def main() -> int:
             f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv", "r", encoding="UTF-8"
         ) as f:
             for row in csv.DictReader(f):
-                if row["MsBetweenPresents"] is not None:
-                    frametimes.append(float(row["MsBetweenPresents"]))
+                if (ms := row.get("MsBetweenPresents")) is not None:
+                    frametimes.append(float(ms))
+                elif (ms := row.get("msBetweenPresents")) is not None:
+                    frametimes.append(float(ms))
         frametimes = sorted(frametimes, reverse=True)
 
         frametime_data = {}
