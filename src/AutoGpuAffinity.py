@@ -317,7 +317,6 @@ def main() -> int:
     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
     for cpu in range(0, total_cpus):
-
         if custom_cores != [] and cpu not in custom_cores:
             continue
 
@@ -379,7 +378,6 @@ def main() -> int:
 
     print("info: begin parsing data, this may take a few minutes...")
     for cpu in range(0, total_cpus):
-
         if custom_cores != [] and cpu not in custom_cores:
             continue
 
