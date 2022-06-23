@@ -256,7 +256,7 @@ def main() -> int:
         print("error: no graphics card found")
         return 1
 
-    has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
+    has_xperf = dpcisr == 1 and os.path.exists(xperf_path)
 
     has_afterburner = (1 <= afterburner_profile <= 5) and (os.path.exists(afterburner_path))
 
