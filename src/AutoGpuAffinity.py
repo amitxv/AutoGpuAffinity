@@ -88,7 +88,7 @@ def apply_affinity(instances: list, action: str, thread: int = -1) -> None:
             delete_key(policy_path, "DevicePolicy")
             delete_key(policy_path, "AssignmentSetOverride")
 
-    subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
+    subprocess.call(["bin\\restart64\\restart64.exe", "/q"])
 
 
 def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None:
@@ -123,10 +123,8 @@ def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None
 
 def start_afterburner(path: str, profile: int) -> None:
     """Starts afterburner and loads a profile"""
-    try:
-        subprocess.run([path, f"-Profile{profile}"], timeout=7, check=False)
-    except subprocess.TimeoutExpired:
-        pass
+    subprocess.Popen([path, f"-Profile{profile}"])
+    time.sleep(7)
     kill_processes("MSIAfterburner.exe")
 
 
@@ -202,7 +200,7 @@ def parse_config(config_path: str) -> dict:
                 if setting != "" and value != "":
                     config[setting] = value
     return config
-    
+
 
 def main() -> int:
     """CLI Entrypoint"""
@@ -318,7 +316,9 @@ def main() -> int:
         ])
         isr_table = dpc_table.copy()
 
-        subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
+        subprocess.call([xperf_path, "-stop"], **subprocess_null)
+        if os.path.exists("C:\\kernel.etl"):
+            os.remove("C:\\kernel.etl")
 
     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
@@ -347,33 +347,36 @@ def main() -> int:
             print(f"info: cpu {cpu} - recording trial: {trial}/{trials}")
 
             if has_xperf:
-                subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
+                subprocess.call([xperf_path, "-on", "base+interrupt+dpc"])
 
-            try:
-                subprocess.run([
-                    "bin\\PresentMon\\PresentMon.exe",
-                    "-stop_existing_session",
-                    "-no_top",
-                    "-verbose",
-                    "-timed", str(duration),
-                    "-process_name", "lava-triangle.exe",
-                    "-output_file", f"{output_path}\\CSVs\\{file_name}.csv",
-                    ], timeout=duration + 5, **subprocess_null, check=False)
-            except subprocess.TimeoutExpired:
-                pass
+            subprocess.Popen([
+                "bin\\PresentMon\\PresentMon.exe",
+                "-stop_existing_session",
+                "-no_top",
+                "-verbose",
+                "-timed", str(duration),
+                "-process_name", "lava-triangle.exe",
+                "-output_file", f"{output_path}\\CSVs\\{file_name}.csv",
+            ], **subprocess_null)
+
+            time.sleep(duration + 5)
+            kill_processes("PresentMon.exe")
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
                 if has_xperf:
-                    subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
+                    subprocess.call([
+                        xperf_path,
+                        "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
+                    ], **subprocess_null)
                 kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
                 print("error: csv log unsuccessful, this is due to a missing dependency/ windows component")
                 return 1
 
             if has_xperf:
-                subprocess.run([
+                subprocess.call([
                     xperf_path,
                     "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
-                ], **subprocess_null, check=False)
+                ], **subprocess_null)
 
                 if not os.path.exists(f"{output_path}\\xperf\\raw\\{file_name}.etl"):
                     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
@@ -406,24 +409,24 @@ def main() -> int:
             for trial in range(1, trials + 1):
                 ETLs.append(f"{output_path}\\xperf\\raw\\CPU-{cpu}-Trial-{trial}.etl")
 
-            subprocess.run([
+            subprocess.call([
                 xperf_path,
                 "-merge", *ETLs,
                 f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"
-            ], **subprocess_null, check=False)
+            ], **subprocess_null)
 
             if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"):
                 print("error: etl merge unsuccessful")
                 return 1
 
             # generate a report based on the merged etl
-            subprocess.run([
+            subprocess.call([
                 xperf_path,
                 "-quiet",
                 "-i", f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl",
                 "-o", f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt",
                 "-a", "dpcisr"
-                ], check=False)
+                ])
 
             if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt"):
                 print("error: unable to generate dpcisr report")
@@ -495,12 +498,11 @@ def main() -> int:
                     dpc_isrdata.append(f"CPU {cpu} {'DPCs' if dpcs else 'ISRs'}")
                     for metric in (95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9):
                         dpc_isrdata.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} μs")
-                    
-                    dpc_table.append(dpc_isrdata) if dpcs else isr_table.append(dpc_isrdata)
 
-    # usually gets created with xperf -stop
-    if os.path.exists("C:\\kernel.etl"):
-        os.remove("C:\\kernel.etl")
+                    if dpcs:
+                        dpc_table.append(dpc_isrdata)
+                    else:
+                        isr_table.append(dpc_isrdata)
 
     if colored_output:
         green = "\x1b[92m"
