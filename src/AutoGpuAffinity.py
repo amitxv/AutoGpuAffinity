@@ -73,7 +73,7 @@ def read_value(path: str, value_name: str) -> list | None:
         return None
 
 
-def cpu_to_dec(cpu: int) -> int:
+def convert_affinity(cpu: int) -> int:
     """Convert CPU affinity to the decimal representation"""
     affinity = 0
     affinity |= 1 << cpu
@@ -336,7 +336,7 @@ def main() -> int:
         if custom_cores != [] and cpu not in custom_cores:
             continue
         
-        dec_affinity = cpu_to_dec(cpu)
+        dec_affinity = convert_affinity(cpu)
 
         print("info: applying affinity")
         apply_affinity(instance_paths, "write", dec_affinity)
