@@ -290,10 +290,6 @@ def main() -> int:
 
     os.mkdir(output_path)
     os.mkdir(f"{output_path}\\CSVs")
-    if has_xperf:
-        os.mkdir(f"{output_path}\\xperf")
-        os.mkdir(f"{output_path}\\xperf\\merged")
-        os.mkdir(f"{output_path}\\xperf\\raw")
 
     main_table = []
     main_table.append([
@@ -302,7 +298,12 @@ def main() -> int:
         "1% Low", "0.1% Low", "0.01% Low", "0.005% Low"
     ])
 
+    # kill all processes before loop and prepare xperf related data
     if has_xperf:
+        os.mkdir(f"{output_path}\\xperf")
+        os.mkdir(f"{output_path}\\xperf\\merged")
+        os.mkdir(f"{output_path}\\xperf\\raw")
+
         dpc_table = []
         dpc_table.append([
             "", "95 %ile", "96 %ile", "97 %ile", "98 %ile", "99 %ile",
@@ -311,9 +312,8 @@ def main() -> int:
         ])
         isr_table = dpc_table.copy()
 
-    # kill all processes before loop
-    if has_xperf:
         subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
+
     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
     for active_thread in range(0, total_cpus):
