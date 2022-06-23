@@ -20,7 +20,7 @@ def kill_processes(*targets: str) -> None:
         subprocess.call(["taskkill", "/F", "/IM", process], **subprocess_null)
 
 
-def calc(frametime_data: dict, metric: str, value: float = -1) -> float:
+def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> float:
     """Calculate various metrics based on framedata"""
     result = 0
     if metric == "Max":
@@ -456,11 +456,11 @@ def main() -> int:
         fps_data = []
         fps_data.append(f"CPU {cpu}")
         for metric in ("Max", "Avg", "Min"):
-            fps_data.append(f"{calc(frametime_data, metric):.2f}")
+            fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
 
         for metric in ("Percentile", "Lows"):
             for value in (1, 0.1, 0.01, 0.005):
-                fps_data.append(f"{calc(frametime_data, metric, value):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, metric, value):.2f}")
         main_table.append(fps_data)
 
         # begin parsing dpc/isr data
