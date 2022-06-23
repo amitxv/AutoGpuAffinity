@@ -447,15 +447,15 @@ def main() -> int:
         frametime_data["sum"] = sum(frametimes)
         frametime_data["len"] = len(frametimes)
 
-        data = []
-        data.append(f"CPU {cpu}")
+        fps_data = []
+        fps_data.append(f"CPU {cpu}")
         for metric in ("Max", "Avg", "Min"):
-            data.append(f"{calc(frametime_data, metric):.2f}")
+            fps_data.append(f"{calc(frametime_data, metric):.2f}")
 
         for metric in ("Percentile", "Lows"):
             for value in (1, 0.1, 0.01, 0.005):
-                data.append(f"{calc(frametime_data, metric, value):.2f}")
-        main_table.append(data)
+                fps_data.append(f"{calc(frametime_data, metric, value):.2f}")
+        main_table.append(fps_data)
 
         # begin parsing dpc/isr data
         if has_xperf:
@@ -485,14 +485,12 @@ def main() -> int:
                         i += 1
 
                     length = len(usec_data)
-                    data = []
-                    data.append(f"CPU {cpu} {'DPCs' if dpcs else 'ISRs'}")
+                    dpc_isrdata = []
+                    dpc_isrdata.append(f"CPU {cpu} {'DPCs' if dpcs else 'ISRs'}")
                     for metric in (95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9):
-                        data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} μs")
-                    if dpcs:
-                        dpc_table.append(data)
-                    else:
-                        isr_table.append(data)
+                        dpc_isrdata.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} μs")
+                    
+                    dpc_table.append(dpc_isrdata) if dpcs else isr_table.append(dpc_isrdata)
 
     # usually gets created with xperf -stop
     if os.path.exists("C:\\kernel.etl"):
