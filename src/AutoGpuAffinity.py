@@ -260,7 +260,7 @@ def main() -> int:
 
     has_afterburner = (1 <= afterburner_profile <= 5) and (os.path.exists(afterburner_path))
 
-    seconds_per_trial = 10 + (7 if has_afterburner else 0) + (cache_trials + trials) * (duration + 5)
+    seconds_per_trial = 10 + (7 * has_afterburner) + (cache_trials + trials) * (duration + 5)
     estimated_time = seconds_per_trial * (total_cpus if custom_cores == [] else len(custom_cores))
 
     os.makedirs("captures", exist_ok=True)
