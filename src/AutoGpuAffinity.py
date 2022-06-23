@@ -230,7 +230,7 @@ def main() -> int:
         print("error: unable to get cpu count")
         return 1
 
-    if trials <= 0 or cache_trials < 0 or duration <= 0:
+    if (trials <= 0) or (cache_trials < 0) or (duration <= 0):
         print("error: invalid trials, cache_trials or duration in config")
         return 1
 
@@ -258,7 +258,7 @@ def main() -> int:
 
     has_xperf = dpcisr != 0 and os.path.exists(xperf_path)
 
-    has_afterburner = 1 <= afterburner_profile <= 5 and os.path.exists(afterburner_path)
+    has_afterburner = (1 <= afterburner_profile <= 5) and (os.path.exists(afterburner_path))
 
     seconds_per_trial = 10 + (7 if has_afterburner else 0) + (cache_trials + trials) * (duration + 5)
     estimated_time = seconds_per_trial * (total_cpus if custom_cores == [] else len(custom_cores))
