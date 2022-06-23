@@ -571,24 +571,57 @@ def main() -> int:
                         new_value = f"{green}*<={int(table[row][column].strip('<= μs'))} μs{default}"
                         table[row][column] = new_value
 
+    table_main = tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f")
+    if has_xperf:
+        table_dpc = tabulate(dpc_table, headers="firstrow", tablefmt="fancy_grid")
+        table_isr = tabulate(isr_table, headers="firstrow", tablefmt="fancy_grid")
+
     frametime_analysis_url = "https://boringboredom.github.io/Frame-Time-Analysis"
     print_result_info = f"""
         > Drag and drop the aggregated CSVs into {frametime_analysis_url} for a graphical representation of the data.
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
         > If you see absurdly low values for 0.005% lows, you should discard the results and re-run the tool.
+        > Report.txt in the working directory contains the output above for later reference
     """
 
     print(print_info)
     print("   FPS/frametime data:\n")
-    print(tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
+    print(table_main)
 
     if has_xperf:
         print("\n    DPC and ISR latency data for dxgkrnl.sys:\n")
-        print(tabulate(dpc_table, headers="firstrow", tablefmt="fancy_grid"))
-        print(tabulate(isr_table, headers="firstrow", tablefmt="fancy_grid"))
+        print(table_dpc)
+        print(table_isr)
 
     print(print_result_info)
+
+    # remove color codes from tables
+    if colored_output:
+        table_arrays = [main_table]
+        if has_xperf:
+            table_arrays.extend([dpc_table, isr_table])
+        for array in table_arrays:
+            for outer in range(len(array)):
+                for inner in range(len(array[outer])):
+                    value = array[outer][inner]
+                    if green in value or default in value:
+                        array[outer][inner] = value.replace(green, "").replace(default, "")
+        
+        table_main = tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f")
+        if has_xperf:
+            table_dpc = tabulate(dpc_table, headers="firstrow", tablefmt="fancy_grid")
+            table_isr = tabulate(isr_table, headers="firstrow", tablefmt="fancy_grid")
+
+    with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as report:
+        report.write(print_info)
+        report.write("\n    FPS/frametime data:\n\n")
+        report.write(table_main)
+
+        if has_xperf:
+            report.write("\n\n    DPC and ISR latency data for dxgkrnl.sys:\n\n")
+            report.write(f"{table_dpc}\n")
+            report.write(table_isr)
 
     return 0
 
