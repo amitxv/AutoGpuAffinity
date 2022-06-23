@@ -226,8 +226,7 @@ def main() -> int:
     x_res = int(config["x_res"])
     y_res = int(config["y_res"])
 
-    total_cpus = os.cpu_count()
-    if total_cpus is None:
+    if (total_cpus := os.cpu_count()) is None:
         print("error: unable to get cpu count")
         return 1
 
@@ -253,8 +252,7 @@ def main() -> int:
         print("error: surrounding brackets for custom_cores value not found")
         return 1
 
-    instance_paths = gpu_instance_paths()
-    if len(instance_paths) == 0:
+    if (instance_paths := gpu_instance_paths()) == []:
         print("error: no graphics card found")
         return 1
 
