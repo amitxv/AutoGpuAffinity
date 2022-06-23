@@ -316,13 +316,13 @@ def main() -> int:
 
     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
-    for active_thread in range(0, total_cpus):
+    for cpu in range(0, total_cpus):
 
-        if custom_cores != [] and active_thread not in custom_cores:
+        if custom_cores != [] and cpu not in custom_cores:
             continue
 
         print("info: applying affinity")
-        apply_affinity(instance_paths, "write", active_thread)
+        apply_affinity(instance_paths, "write", cpu)
         time.sleep(5)
 
         if has_afterburner:
@@ -334,12 +334,12 @@ def main() -> int:
 
         if cache_trials > 0:
             for trial in range(1, cache_trials + 1):
-                print(f"info: cpu {active_thread} - cache trial: {trial}/{cache_trials}")
+                print(f"info: cpu {cpu} - cache trial: {trial}/{cache_trials}")
                 time.sleep(duration + 5)
 
         for trial in range(1, trials + 1):
-            file_name = f"CPU-{active_thread}-Trial-{trial}"
-            print(f"info: cpu {active_thread} - recording trial: {trial}/{trials}")
+            file_name = f"CPU-{cpu}-Trial-{trial}"
+            print(f"info: cpu {cpu} - recording trial: {trial}/{trials}")
 
             if has_xperf:
                 subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
@@ -378,21 +378,21 @@ def main() -> int:
         kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
     print("info: begin parsing data, this may take a few minutes...")
-    for active_thread in range(0, total_cpus):
+    for cpu in range(0, total_cpus):
 
-        if custom_cores != [] and active_thread not in custom_cores:
+        if custom_cores != [] and cpu not in custom_cores:
             continue
 
         # begin aggregating CSVs and ETLs
-        print(f"info: cpu {active_thread} - aggregating frametime data")
+        print(f"info: cpu {cpu} - aggregating frametime data")
 
         CSVs = []
         for trial in range(1, trials + 1):
-            CSVs.append(f"{output_path}\\CSVs\\CPU-{active_thread}-Trial-{trial}.csv")
+            CSVs.append(f"{output_path}\\CSVs\\CPU-{cpu}-Trial-{trial}.csv")
 
-        aggregated_csv = f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv"
+        aggregated_csv = f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv"
         aggregate(CSVs, aggregated_csv)
-        if not os.path.exists(f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv"):
+        if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv"):
             print("error: csv aggregation unsuccessful")
             return 1
 
@@ -400,15 +400,15 @@ def main() -> int:
             # merge etls
             ETLs = []
             for trial in range(1, trials + 1):
-                ETLs.append(f"{output_path}\\xperf\\raw\\CPU-{active_thread}-Trial-{trial}.etl")
+                ETLs.append(f"{output_path}\\xperf\\raw\\CPU-{cpu}-Trial-{trial}.etl")
 
             subprocess.run([
                 xperf_path,
                 "-merge", *ETLs,
-                f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl"
+                f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"
             ], **subprocess_null, check=False)
 
-            if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl"):
+            if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"):
                 print("error: etl merge unsuccessful")
                 return 1
 
@@ -416,26 +416,26 @@ def main() -> int:
             subprocess.run([
                 xperf_path,
                 "-quiet",
-                "-i", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl",
-                "-o", f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt",
+                "-i", f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl",
+                "-o", f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt",
                 "-a", "dpcisr"
                 ], check=False)
 
-            if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt"):
+            if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt"):
                 print("error: unable to generate dpcisr report")
                 return 1
 
             if not save_etls:
-                os.remove(f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.etl")
+                os.remove(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl")
                 for trial in range(1, trials + 1):
-                    os.remove(f"{output_path}\\xperf\\raw\\CPU-{active_thread}-Trial-{trial}.etl")
+                    os.remove(f"{output_path}\\xperf\\raw\\CPU-{cpu}-Trial-{trial}.etl")
 
         # begin parsing frametime data
-        print(f"info: cpu {active_thread} - parsing frametime data")
+        print(f"info: cpu {cpu} - parsing frametime data")
 
         frametimes = []
         with open(
-            f"{output_path}\\CSVs\\CPU-{active_thread}-Aggregated.csv", "r", encoding="UTF-8"
+            f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv", "r", encoding="UTF-8"
         ) as f:
             for row in csv.DictReader(f):
                 if row["MsBetweenPresents"] is not None:
@@ -450,7 +450,7 @@ def main() -> int:
         frametime_data["len"] = len(frametimes)
 
         data = []
-        data.append(f"CPU {active_thread}")
+        data.append(f"CPU {cpu}")
         for metric in ("Max", "Avg", "Min"):
             data.append(f"{calc(frametime_data, metric):.2f}")
 
@@ -461,9 +461,9 @@ def main() -> int:
 
         # begin parsing dpc/isr data
         if has_xperf:
-            print(f"info: cpu {active_thread} - parsing dpc/isr data")
+            print(f"info: cpu {cpu} - parsing dpc/isr data")
             with open(
-                f"{output_path}\\xperf\\merged\\CPU-{active_thread}-Merged.txt", "r", encoding="UTF-8"
+                f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt", "r", encoding="UTF-8"
             ) as report:
                 report_lines = [x.strip("\n") for x in report]
 
@@ -488,7 +488,7 @@ def main() -> int:
 
                     length = len(usec_data)
                     data = []
-                    data.append(f"CPU {active_thread} {'DPCs' if dpcs else 'ISRs'}")
+                    data.append(f"CPU {cpu} {'DPCs' if dpcs else 'ISRs'}")
                     for metric in (95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9):
                         data.append(f"<={sorted(usec_data)[int(math.ceil((length * metric) / 100)) - 1]} μs")
                     if dpcs:
