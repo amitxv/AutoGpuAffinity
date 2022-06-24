@@ -326,8 +326,6 @@ def main() -> int:
         isr_table = dpc_table.copy()
 
         subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
-        if os.path.exists("C:\\kernel.etl"):
-            os.remove("C:\\kernel.etl")
 
     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
 
@@ -536,6 +534,9 @@ def main() -> int:
     os.system("cls")
     os.system("mode 300, 1000")
     apply_affinity(instance_paths, "delete")
+    
+    if os.path.exists("C:\\kernel.etl"):
+        os.remove("C:\\kernel.etl")
 
     timer_resolution(False)
 
