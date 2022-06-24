@@ -83,7 +83,7 @@ def convert_affinity(cpu: int) -> int:
 def apply_affinity(instances: list, action: str, affinity: int = -1) -> None:
     """
     Apply interrupt affinity policy to graphics driver
-    
+
     Accepts affinity as the decimal representation
     """
     for instance in instances:
@@ -272,7 +272,7 @@ def main() -> int:
 
     has_xperf = dpcisr == 1 and os.path.exists(xperf_path)
 
-    has_afterburner = (1 <= afterburner_profile <= 5) and (os.path.exists(afterburner_path))
+    has_afterburner = (1 <= afterburner_profile <= 5) and os.path.exists(afterburner_path)
 
     seconds_per_trial = 10 + (7 * has_afterburner) + (cache_trials + trials) * (duration + 5)
     estimated_time = seconds_per_trial * (total_cpus if custom_cores == [] else len(custom_cores))
@@ -335,7 +335,7 @@ def main() -> int:
     for cpu in range(0, total_cpus):
         if custom_cores != [] and cpu not in custom_cores:
             continue
-        
+
         dec_affinity = convert_affinity(cpu)
 
         print("info: applying affinity")
@@ -607,7 +607,7 @@ def main() -> int:
                     value = array[outer][inner]
                     if green in value or default in value:
                         array[outer][inner] = value.replace(green, "").replace(default, "")
-        
+
         table_main = tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f")
         if has_xperf:
             table_dpc = tabulate(dpc_table, headers="firstrow", tablefmt="fancy_grid")
