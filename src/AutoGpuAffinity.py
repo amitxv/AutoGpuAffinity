@@ -17,7 +17,7 @@ enum_pci_path = "SYSTEM\\ControlSet001\\Enum\\PCI"
 def kill_processes(*targets: str) -> None:
     """Kill windows processes"""
     for process in targets:
-        subprocess.call(["taskkill", "/F", "/IM", process], **subprocess_null)
+        subprocess.run(["taskkill", "/F", "/IM", process], **subprocess_null, check=False)
 
 
 def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> float:
@@ -97,7 +97,7 @@ def apply_affinity(instances: list, action: str, affinity: int = -1) -> None:
             delete_key(policy_path, "DevicePolicy")
             delete_key(policy_path, "AssignmentSetOverride")
 
-    subprocess.call(["bin\\restart64\\restart64.exe", "/q"])
+    subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
 
 def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None:
@@ -172,8 +172,7 @@ def timer_resolution(enabled: bool) -> int:
         10000, int(enabled), ctypes.byref(curr_res)
     ) == 0:
         return 0
-    else:
-        return 1
+    return 1
 
 
 def gpu_instance_paths() -> list:
@@ -326,7 +325,7 @@ def main() -> int:
         ])
         isr_table = dpc_table.copy()
 
-        subprocess.call([xperf_path, "-stop"], **subprocess_null)
+        subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
         if os.path.exists("C:\\kernel.etl"):
             os.remove("C:\\kernel.etl")
 
@@ -350,11 +349,11 @@ def main() -> int:
         if sync_liblava_affinity:
             affinity_args = ["/affinity", str(dec_affinity)]
 
-        subprocess.call([
+        subprocess.run([
             "start",
             *affinity_args,
             "bin\\liblava\\lava-triangle.exe"
-        ], shell=True)
+        ], shell=True, check=False)
 
         time.sleep(5)
 
@@ -368,7 +367,7 @@ def main() -> int:
             print(f"info: cpu {cpu} - recording trial: {trial}/{trials}")
 
             if has_xperf:
-                subprocess.call([xperf_path, "-on", "base+interrupt+dpc"])
+                subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
 
             subprocess.Popen([
                 "bin\\PresentMon\\PresentMon.exe",
@@ -384,19 +383,19 @@ def main() -> int:
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
                 if has_xperf:
-                    subprocess.call([
+                    subprocess.run([
                         xperf_path,
                         "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
-                    ], **subprocess_null)
+                    ], **subprocess_null, check=False)
                 kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
                 print("error: csv log unsuccessful, this is due to a missing dependency/ windows component")
                 return 1
 
             if has_xperf:
-                subprocess.call([
+                subprocess.run([
                     xperf_path,
                     "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
-                ], **subprocess_null)
+                ], **subprocess_null, check=False)
 
                 if not os.path.exists(f"{output_path}\\xperf\\raw\\{file_name}.etl"):
                     kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
@@ -429,24 +428,24 @@ def main() -> int:
             for trial in range(1, trials + 1):
                 ETLs.append(f"{output_path}\\xperf\\raw\\CPU-{cpu}-Trial-{trial}.etl")
 
-            subprocess.call([
+            subprocess.run([
                 xperf_path,
                 "-merge", *ETLs,
                 f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"
-            ], **subprocess_null)
+            ], **subprocess_null, check=False)
 
             if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"):
                 print("error: etl merge unsuccessful")
                 return 1
 
             # generate a report based on the merged etl
-            subprocess.call([
+            subprocess.run([
                 xperf_path,
                 "-quiet",
                 "-i", f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl",
                 "-o", f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt",
                 "-a", "dpcisr"
-                ])
+                ], check=False)
 
             if not os.path.exists(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt"):
                 print("error: unable to generate dpcisr report")
