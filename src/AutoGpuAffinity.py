@@ -278,7 +278,7 @@ def main() -> int:
 
     os.makedirs("captures", exist_ok=True)
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
-    print_info = f"""
+    runtime_info = f"""
     AutoGpuAffinity v{version} Command Line
 
         Trials: {trials}
@@ -292,7 +292,7 @@ def main() -> int:
         Session Working directory: \\{output_path}\\
         Fullscreen: {fullscreen} {f"({x_res}x{y_res})" if not fullscreen else ""}
     """
-    print(print_info)
+    print(runtime_info)
     input("    Press enter to start benchmarking...\n")
 
     print("info: creating liblava config file")
@@ -585,7 +585,7 @@ def main() -> int:
         > Report.txt in the working directory contains the output above for later reference
     """
 
-    print(print_info)
+    print(runtime_info)
     print("   FPS/frametime data:\n")
     print(table_main)
 
@@ -602,11 +602,11 @@ def main() -> int:
         if has_xperf:
             table_arrays.extend([dpc_table, isr_table])
         for array in table_arrays:
-            for outer in range(len(array)):
-                for inner in range(len(array[outer])):
-                    value = array[outer][inner]
-                    if green in value or default in value:
-                        array[outer][inner] = value.replace(green, "").replace(default, "")
+            for outer_index, outer_value in enumerate(array):
+                for inner_index, inner_value in enumerate(outer_value):
+                    if green in inner_value or default in inner_value:
+                        new_value = str(inner_value).replace(green, "").replace(default, "")
+                        array[outer_index][inner_index] = new_value
 
         table_main = tabulate(main_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f")
         if has_xperf:
@@ -614,7 +614,7 @@ def main() -> int:
             table_isr = tabulate(isr_table, headers="firstrow", tablefmt="fancy_grid")
 
     with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as report_f:
-        report_f.write(print_info)
+        report_f.write(runtime_info)
         report_f.write("\n    FPS/frametime data:\n\n")
         report_f.write(table_main)
 
