@@ -186,7 +186,7 @@ def gpu_instance_paths() -> list:
                     driver_desc = read_value(f"{enum_pci_path}\\{sub_keys}", "DeviceDesc")
                     if driver_desc is not None:
                         driver_desc = str(driver_desc).upper()
-                        if "NVIDIA_DEV" in driver_desc or ("AMD" in driver_desc and "RADEON" in driver_desc):
+                        if ("NVIDIA_DEV" in driver_desc or "NVIDIA GRAPHICS" in driver_desc) or ("AMD" in driver_desc and "RADEON" in driver_desc):
                             dev_inst_path.append(sub_keys)
     return dev_inst_path
 
