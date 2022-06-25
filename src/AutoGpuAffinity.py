@@ -125,9 +125,9 @@ def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None
         "    }",
         "}",
     ]
-    with open(lavatriangle_config, "a", encoding="UTF-8") as f:
+    with open(lavatriangle_config, "a", encoding="UTF-8") as cfg_f:
         for i in lavatriangle_content:
-            f.write(f"{i}\n")
+            cfg_f.write(f"{i}\n")
 
 
 def start_afterburner(path: str, profile: int) -> None:
@@ -179,14 +179,14 @@ def gpu_instance_paths() -> list:
     """Returns a list of the device instance paths for all present NVIDIA/AMD GPUs"""
     dev_inst_path = []
     # iterate over Enum\PCI\X
-    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, enum_pci_path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as pci:
-        for a in range(winreg.QueryInfoKey(pci)[0]):
-            pci_subkeys = winreg.EnumKey(pci, a)
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, enum_pci_path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as pci_keys:
+        for pci_key_index in range(winreg.QueryInfoKey(pci_keys)[0]):
+            pci_subkeys = winreg.EnumKey(pci_keys, pci_key_index)
 
             # iterate over Enum\PCI\X\Y
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"{enum_pci_path}\\{pci_subkeys}", 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as subkey:
-                for b in range(winreg.QueryInfoKey(subkey)[0]):
-                    sub_keys = f"{pci_subkeys}\\{winreg.EnumKey(subkey, b)}"
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"{enum_pci_path}\\{pci_subkeys}", 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as pci_subkey:
+                for pci_subkey_index in range(winreg.QueryInfoKey(pci_subkey)[0]):
+                    sub_keys = f"{pci_subkeys}\\{winreg.EnumKey(pci_subkey, pci_subkey_index)}"
 
                     # read DeviceDesc inside Enum\PCI\X\Y
                     driver_desc = read_value(f"{enum_pci_path}\\{sub_keys}", "DeviceDesc")
@@ -200,8 +200,8 @@ def gpu_instance_paths() -> list:
 def parse_config(config_path: str) -> dict:
     """Parse a simple configuration file and return a dict of the settings/values"""
     config = {}
-    with open(config_path, "r", encoding="UTF-8") as config_file:
-        for line in config_file:
+    with open(config_path, "r", encoding="UTF-8") as cfg_f:
+        for line in cfg_f:
             if "//" not in line:
                 line = line.strip("\n")
                 setting, _equ, value = line.rpartition("=")
@@ -410,25 +410,25 @@ def main() -> int:
         # begin aggregating CSVs and ETLs
         print(f"info: cpu {cpu} - aggregating frametime data")
 
-        CSVs = []
+        raw_csvs = []
         for trial in range(1, trials + 1):
-            CSVs.append(f"{output_path}\\CSVs\\CPU-{cpu}-Trial-{trial}.csv")
+            raw_csvs.append(f"{output_path}\\CSVs\\CPU-{cpu}-Trial-{trial}.csv")
 
         aggregated_csv = f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv"
-        aggregate(CSVs, aggregated_csv)
+        aggregate(raw_csvs, aggregated_csv)
         if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv"):
             print("error: csv aggregation unsuccessful")
             return 1
 
         if has_xperf:
             # merge etls
-            ETLs = []
+            raw_etls = []
             for trial in range(1, trials + 1):
-                ETLs.append(f"{output_path}\\xperf\\raw\\CPU-{cpu}-Trial-{trial}.etl")
+                raw_etls.append(f"{output_path}\\xperf\\raw\\CPU-{cpu}-Trial-{trial}.etl")
 
             subprocess.run([
                 xperf_path,
-                "-merge", *ETLs,
+                "-merge", *raw_etls,
                 f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.etl"
             ], **subprocess_null, check=False)
 
@@ -460,12 +460,12 @@ def main() -> int:
         frametimes = []
         with open(
             f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv", "r", encoding="UTF-8"
-        ) as f:
-            for row in csv.DictReader(f):
-                if (ms := row.get("MsBetweenPresents")) is not None:
-                    frametimes.append(float(ms))
-                elif (ms := row.get("msBetweenPresents")) is not None:
-                    frametimes.append(float(ms))
+        ) as csv_f:
+            for row in csv.DictReader(csv_f):
+                if (milliseconds := row.get("MsBetweenPresents")) is not None:
+                    frametimes.append(float(milliseconds))
+                elif (milliseconds := row.get("msBetweenPresents")) is not None:
+                    frametimes.append(float(milliseconds))
         frametimes = sorted(frametimes, reverse=True)
 
         frametime_data = {}
@@ -490,8 +490,8 @@ def main() -> int:
             print(f"info: cpu {cpu} - parsing dpc/isr data")
             with open(
                 f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt", "r", encoding="UTF-8"
-            ) as report:
-                report_lines = [x.strip("\n") for x in report]
+            ) as report_f:
+                report_lines = [x.strip("\n") for x in report_f]
 
             dpcs = 0
             for i in range(len(report_lines)):
@@ -534,7 +534,7 @@ def main() -> int:
     os.system("cls")
     os.system("mode 300, 1000")
     apply_affinity(instance_paths, "delete")
-    
+
     if os.path.exists("C:\\kernel.etl"):
         os.remove("C:\\kernel.etl")
 
@@ -613,15 +613,15 @@ def main() -> int:
             table_dpc = tabulate(dpc_table, headers="firstrow", tablefmt="fancy_grid")
             table_isr = tabulate(isr_table, headers="firstrow", tablefmt="fancy_grid")
 
-    with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as report:
-        report.write(print_info)
-        report.write("\n    FPS/frametime data:\n\n")
-        report.write(table_main)
+    with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as report_f:
+        report_f.write(print_info)
+        report_f.write("\n    FPS/frametime data:\n\n")
+        report_f.write(table_main)
 
         if has_xperf:
-            report.write("\n\n    DPC and ISR latency data for dxgkrnl.sys:\n\n")
-            report.write(f"{table_dpc}\n")
-            report.write(table_isr)
+            report_f.write("\n\n    DPC and ISR latency data for dxgkrnl.sys:\n\n")
+            report_f.write(f"{table_dpc}\n")
+            report_f.write(table_isr)
 
     return 0
 
