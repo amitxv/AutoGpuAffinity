@@ -62,9 +62,7 @@ def delete_key(path: str, value_name: str) -> None:
 def read_value(path: str, value_name: str) -> list | None:
     """Read keys in Windows Registry"""
     try:
-        with winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY
-        ) as key:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
             try:
                 return winreg.QueryValueEx(key, value_name)[0]
             except FileNotFoundError:
@@ -102,7 +100,7 @@ def apply_affinity(instances: list, action: str, affinity: int = -1) -> None:
 
 def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None:
     """Creates the lava-triangle configuration file"""
-    lavatriangle_folder = (f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle")
+    lavatriangle_folder = f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
     os.makedirs(lavatriangle_folder, exist_ok=True)
     lavatriangle_config = f"{lavatriangle_folder}\\window.json"
 
@@ -164,13 +162,9 @@ def timer_resolution(enabled: bool) -> int:
     max_res = ctypes.c_ulong()
     curr_res = ctypes.c_ulong()
 
-    ntdll.NtQueryTimerResolution(
-        ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res)
-    )
+    ntdll.NtQueryTimerResolution(ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res))
 
-    if max_res.value <= 10000 and ntdll.NtSetTimerResolution(
-        10000, int(enabled), ctypes.byref(curr_res)
-    ) == 0:
+    if max_res.value <= 10000 and ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) == 0:
         return 0
     return 1
 
@@ -347,11 +341,7 @@ def main() -> int:
         if sync_liblava_affinity:
             affinity_args = ["/affinity", str(dec_affinity)]
 
-        subprocess.run([
-            "start",
-            *affinity_args,
-            "bin\\liblava\\lava-triangle.exe"
-        ], shell=True, check=False)
+        subprocess.run(["start", *affinity_args, "bin\\liblava\\lava-triangle.exe"], shell=True, check=False)
 
         time.sleep(5)
 
@@ -458,9 +448,7 @@ def main() -> int:
         print(f"info: cpu {cpu} - parsing frametime data")
 
         frametimes = []
-        with open(
-            f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv", "r", encoding="UTF-8"
-        ) as csv_f:
+        with open(f"{output_path}\\CSVs\\CPU-{cpu}-Aggregated.csv", "r", encoding="UTF-8") as csv_f:
             for row in csv.DictReader(csv_f):
                 if (milliseconds := row.get("MsBetweenPresents")) is not None:
                     frametimes.append(float(milliseconds))
@@ -488,9 +476,7 @@ def main() -> int:
         # begin parsing dpc/isr data
         if has_xperf:
             print(f"info: cpu {cpu} - parsing dpc/isr data")
-            with open(
-                f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt", "r", encoding="UTF-8"
-            ) as report_f:
+            with open(f"{output_path}\\xperf\\merged\\CPU-{cpu}-Merged.txt", "r", encoding="UTF-8") as report_f:
                 report_lines = [x.strip("\n") for x in report_f]
 
             dpcs = 0
