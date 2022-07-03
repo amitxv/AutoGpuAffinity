@@ -494,8 +494,9 @@ def main() -> int:
                         line = line.split(",")[1:-1]
                         # convert to int
                         line = [int(x) for x in line]
-                        for _ in range(line[1] + 1):
-                            usec_data.append(line[0])
+                        if len(line) == 2:
+                            for _ in range(line[1] + 1):
+                                usec_data.append(line[0])
                         i += 1
 
                     length = len(usec_data)
