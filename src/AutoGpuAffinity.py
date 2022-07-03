@@ -206,7 +206,7 @@ def parse_config(config_path: str) -> dict:
 
 def main() -> int:
     """CLI Entrypoint"""
-    version = "0.11.0"
+    version = "0.11.1"
 
     # change directory to location of program
     program_path = ""
