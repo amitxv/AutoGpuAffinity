@@ -11,7 +11,7 @@ for %%i in (
     "pip.exe",
     "7z.exe"
 ) do (
-    where %%i > NUL
+    where %%i
     if not %errorlevel% == 0 (
         set "path_err=1"
         echo error: %%i not found in path
