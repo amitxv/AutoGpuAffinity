@@ -20,6 +20,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 ## Usage
 
 - Windows ADK must be installed for DPC/ISR logging with xperf (this is entirely optional).
+
     - [ADK for Windows 8.1+](https://docs.microsoft.com/en-us/windows-hardware/get-started/adk-install)
     - [ADK for Windows 7](http://download.microsoft.com/download/A/6/A/A6AC035D-DA3F-4F0C-ADA4-37C8E5D34E3D/setup/WinSDKPerformanceToolKit_amd64/wpt_x64.msi)
 
@@ -29,8 +30,6 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
     - configure the path along with the profile to load in config.txt
     
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases).
-
-- NOTE: Set ``colored_output=0`` in config.txt on Windows 7/8/8.1 to prevent junk appearing in the results table.
 
 - In the extracted directory, either double-click ``start.bat`` or run AutoGpuAffinity.exe through the command-line and press enter when ready.
 

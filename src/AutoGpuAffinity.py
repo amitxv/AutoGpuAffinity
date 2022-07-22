@@ -7,6 +7,7 @@ import csv
 import math
 import sys
 import ctypes
+import platform
 from tabulate import tabulate
 
 ntdll = ctypes.WinDLL("ntdll.dll")
@@ -518,7 +519,11 @@ def main() -> int:
                     else:
                         isr_table.append(dpc_isrdata)
 
-    if colored_output:
+    valid_os = False
+    if platform.release() != "" and int(platform.release()) >= 10:
+        valid_os = True
+
+    if int(platform.release()) > 10 and colored_output:
         green = "\x1b[92m"
         default = "\x1b[0m"
         os.system("color")
