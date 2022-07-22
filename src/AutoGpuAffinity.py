@@ -38,6 +38,12 @@ def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> 
             if current_total >= value / 100 * frametime_data["sum"]:
                 result = present
                 break
+    elif metric == "STDEV":
+        mean = frametime_data["sum"] / frametime_data["len"]
+        dev = [x - mean for x in frametime_data["frametimes"]]
+        dev2 = [x * x for x in dev]
+        result = math.sqrt(sum(dev2) / frametime_data["len"])
+
     return 1000 / result
 
 
@@ -300,7 +306,7 @@ def main() -> int:
 
     main_table = []
     main_table.append([
-        "", "Max", "Avg", "Min",
+        "", "Max", "Avg", "Min", "STDEV",
         "1 %ile", "0.1 %ile", "0.01 %ile", "0.005 %ile",
         "1% Low", "0.1% Low", "0.01% Low", "0.005% Low"
     ])
@@ -467,6 +473,8 @@ def main() -> int:
         fps_data.append(f"CPU {cpu}")
         for metric in ("Max", "Avg", "Min"):
             fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
+        
+        fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         for metric in ("Percentile", "Lows"):
             for value in (1, 0.1, 0.01, 0.005):
@@ -528,33 +536,34 @@ def main() -> int:
     timer_resolution(False)
 
     for column in range(1, len(main_table[0])):
-        highest_fps = 0
+        best_value = float(main_table[1][column])
         for row in range(1, len(main_table)):
             fps = float(main_table[row][column])
-            if fps > highest_fps:
-                highest_fps = fps
+            if fps > best_value:
+                best_value = fps
 
         # iterate over the entire row again and find matches
         # this way we can append a * or green text to all duplicate values
         # as it is only fair to do so
         for row in range(1, len(main_table)):
-            fps = float(main_table[row][column])
-            if fps == highest_fps:
+            fps = abs(float(main_table[row][column]))
+            main_table[row][column] = f"{fps:.2f}"
+            if fps == abs(best_value):
                 new_value = f"{green}*{float(main_table[row][column]):.2f}{default}"
                 main_table[row][column] = new_value
 
     if has_xperf:
         for table in [dpc_table, isr_table]:
             for column in range(1, len(table[0])):
-                lowest_usecs = 9999
+                best_value = float(table[1][column].strip("<= μs"))
                 for row in range(1, len(table)):
                     usecs = float(table[row][column].strip("<= μs"))
-                    if usecs < lowest_usecs:
-                        lowest_usecs = usecs
+                    if usecs < best_value:
+                        best_value = usecs
 
                 for row in range(1, len(table)):
                     usecs = float(table[row][column].strip("<= μs"))
-                    if usecs == lowest_usecs:
+                    if usecs == best_value:
                         new_value = f"{green}*<={int(table[row][column].strip('<= μs'))} μs{default}"
                         table[row][column] = new_value
 
@@ -569,7 +578,7 @@ def main() -> int:
         > Affinities for all GPUs have been reset to the Windows default (none).
         > Consider running this tool a few more times to see if the same core is consistently performant.
         > If you see absurdly low values for 0.005% lows, you should discard the results and re-run the tool.
-        > Report.txt in the working directory contains the output above for later reference
+        > Report.txt in the working directory contains the output above for later reference.
     """
 
     print(runtime_info)
@@ -591,7 +600,7 @@ def main() -> int:
         for array in table_arrays:
             for outer_index, outer_value in enumerate(array):
                 for inner_index, inner_value in enumerate(outer_value):
-                    if green in inner_value or default in inner_value:
+                    if green in str(inner_value) or default in str(inner_value):
                         new_value = str(inner_value).replace(green, "").replace(default, "")
                         array[outer_index][inner_index] = new_value
 
