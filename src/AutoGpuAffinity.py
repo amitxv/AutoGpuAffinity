@@ -474,7 +474,7 @@ def main() -> int:
         fps_data.append(f"CPU {cpu}")
         for metric in ("Max", "Avg", "Min"):
             fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
-        
+
         fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         for metric in ("Percentile", "Lows"):
@@ -519,11 +519,9 @@ def main() -> int:
                     else:
                         isr_table.append(dpc_isrdata)
 
-    valid_os = False
-    if platform.release() != "" and int(platform.release()) >= 10:
-        valid_os = True
+    colored_output = colored_output and platform.release() != "" and int(platform.release()) >= 10
 
-    if int(platform.release()) > 10 and colored_output:
+    if colored_output:
         green = "\x1b[92m"
         default = "\x1b[0m"
         os.system("color")
