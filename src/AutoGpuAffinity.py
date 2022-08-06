@@ -20,6 +20,7 @@ def kill_processes(*targets: str) -> None:
     for process in targets:
         subprocess.run(["taskkill", "/F", "/IM", process], **subprocess_null, check=False)
 
+
 def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> float:
     """calculate various metrics based on frametime data"""
     result = 0
@@ -210,8 +211,18 @@ def parse_config(config_path: str) -> dict:
     return config
 
 
+def is_admin() -> bool:
+    """check if script is ran with admin privileges"""
+    return ctypes.windll.shell32.IsUserAnAdmin() != 0
+
+
 def main() -> int:
     """cli entrypoint"""
+
+    if not is_admin():
+        print("error: administrator privileges required")
+        return 1
+
     version = "0.11.2"
 
     # change directory to location of program

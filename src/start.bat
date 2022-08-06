@@ -13,4 +13,4 @@ if exist "AutoGpuAffinity.py" (
 )
 
 pause
-exit /b
+exit /b 0
