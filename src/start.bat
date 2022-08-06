@@ -3,7 +3,7 @@
 :: this script is used to start the main program so
 :: that the user does not need to run it through the CLI
 
-cd "%~dp0"
+pushd "%~dp0"
 if exist "AutoGpuAffinity.py" (
     "AutoGpuAffinity.py"
 ) else (
