@@ -16,13 +16,12 @@ enum_pci_path = "SYSTEM\\ControlSet001\\Enum\\PCI"
 
 
 def kill_processes(*targets: str) -> None:
-    """Kill windows processes"""
+    """kill windows processes"""
     for process in targets:
         subprocess.run(["taskkill", "/F", "/IM", process], **subprocess_null, check=False)
 
-
 def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> float:
-    """Calculate various metrics based on framedata"""
+    """calculate various metrics based on frametime data"""
     result = 0
     if metric == "Max":
         result = frametime_data["min"]
@@ -49,13 +48,13 @@ def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> 
 
 
 def write_key(path: str, value_name: str, data_type: int, value_data: int | bytes) -> None:
-    """Write keys to Windows Registry"""
+    """write keys to windows registry"""
     with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
         winreg.SetValueEx(key, value_name, 0, data_type, value_data)  # type: ignore
 
 
 def delete_key(path: str, value_name: str) -> None:
-    """Delete keys in Windows Registry"""
+    """delete keys in windows registry"""
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
             try:
@@ -67,7 +66,7 @@ def delete_key(path: str, value_name: str) -> None:
 
 
 def read_value(path: str, value_name: str) -> list | None:
-    """Read keys in Windows Registry"""
+    """read keys in windows registry"""
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
             try:
@@ -79,7 +78,7 @@ def read_value(path: str, value_name: str) -> list | None:
 
 
 def convert_affinity(cpu: int) -> int:
-    """Convert CPU affinity to the decimal representation"""
+    """convert cpu affinity to the decimal representation"""
     affinity = 0
     affinity |= 1 << cpu
     return affinity
@@ -87,9 +86,9 @@ def convert_affinity(cpu: int) -> int:
 
 def apply_affinity(instances: list, action: str, affinity: int = -1) -> None:
     """
-    Apply interrupt affinity policy to graphics driver
+    apply interrupt affinity policy to graphics driver
 
-    Accepts affinity as the decimal representation
+    accepts affinity as the decimal representation
     """
     for instance in instances:
         policy_path = f"{enum_pci_path}\\{instance}\\Device Parameters\\Interrupt Management\\Affinity Policy"
@@ -106,7 +105,7 @@ def apply_affinity(instances: list, action: str, affinity: int = -1) -> None:
 
 
 def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None:
-    """Creates the lava-triangle configuration file"""
+    """creates the lava-triangle configuration file"""
     lavatriangle_folder = f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
     os.makedirs(lavatriangle_folder, exist_ok=True)
     lavatriangle_config = f"{lavatriangle_folder}\\window.json"
@@ -136,14 +135,14 @@ def create_lava_cfg(fullscr: bool, x_resolution: int, y_resolution: int) -> None
 
 
 def start_afterburner(path: str, profile: int) -> None:
-    """Starts afterburner and loads a profile"""
+    """starts msi afterburner and loads a profile"""
     subprocess.Popen([path, f"-Profile{profile}"])
     time.sleep(7)
     kill_processes("MSIAfterburner.exe")
 
 
 def aggregate(files: list, output_file: str) -> None:
-    """Aggregates PresentMon CSV files"""
+    """aggregates presentmon CSV files"""
     aggregated = []
     for file in files:
         with open(file, "r", encoding="UTF-8") as csv_f:
@@ -161,9 +160,9 @@ def aggregate(files: list, output_file: str) -> None:
 
 def timer_resolution(enabled: bool) -> int:
     """
-    Sets the kernel timer-resolution to 1ms
+    sets the kernel timer-resolution to 1000hz
 
-    This function does not affect other processes on Windows 10 2004+
+    this function does not affect other processes on Windows 10 2004+
     """
     min_res = ctypes.c_ulong()
     max_res = ctypes.c_ulong()
@@ -177,7 +176,7 @@ def timer_resolution(enabled: bool) -> int:
 
 
 def gpu_instance_paths() -> list:
-    """Returns a list of the device instance paths for all present NVIDIA/AMD GPUs"""
+    """returns a list of the device instance paths for all present nvidia/amd gpus"""
     dev_inst_path = []
     # iterate over Enum\PCI\X
     with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, enum_pci_path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as pci_keys:
@@ -199,7 +198,7 @@ def gpu_instance_paths() -> list:
 
 
 def parse_config(config_path: str) -> dict:
-    """Parse a simple configuration file and return a dict of the settings/values"""
+    """parse a simple configuration file and return a dict of the settings/values"""
     config = {}
     with open(config_path, "r", encoding="UTF-8") as cfg_f:
         for line in cfg_f:
@@ -212,7 +211,7 @@ def parse_config(config_path: str) -> dict:
 
 
 def main() -> int:
-    """CLI Entrypoint"""
+    """cli entrypoint"""
     version = "0.11.2"
 
     # change directory to location of program
