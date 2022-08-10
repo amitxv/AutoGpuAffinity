@@ -235,6 +235,11 @@ def main() -> int:
 
     config = parse_config("config.txt")
 
+    required_binaries = ["liblava\\lava-triangle.exe", "liblava\\res.zip", "PresentMon\\PresentMon.exe", "restart64\\restart64.exe"]
+    if not all(os.path.exists(f"bin\\{x}") for x in required_binaries):
+        print("error: missing binaries")
+        return 1
+
     trials = int(config["trials"])
     duration = int(config["duration"])
     cache_trials = int(config["cache_trials"])
