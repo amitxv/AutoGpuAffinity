@@ -249,7 +249,7 @@ def main() -> int:
     afterburner_profile = int(config["afterburner_profile"])
     afterburner_path = str(config["afterburner_path"])
     custom_cores = str(config["custom_cores"])
-    colored_output = bool(int(config["colored_output"]))
+    colored_output = bool(int(config["colored_output"])) and platform.release() != "" and int(platform.release()) >= 10
     fullscreen = bool(int(config["fullscreen"]))
     x_res = int(config["x_res"])
     y_res = int(config["y_res"])
@@ -297,16 +297,20 @@ def main() -> int:
     runtime_info = f"""
     AutoGpuAffinity v{version} Command Line
 
+        Total CPUs: {total_cpus - 1}
+        Time for completion: {estimated_time/60:.2f} min
+        Session Working directory: \\{output_path}
+
         Trials: {trials}
         Trial Duration: {duration} sec
-        Benchmark CPUs: {"All" if custom_cores == [] else str(custom_cores).strip("[]")}
-        Total CPUs: {total_cpus - 1}
-        Log dpc/isr with xperf: {has_xperf}
-        Load MSI Afterburner : {has_afterburner}
         Cache trials: {cache_trials}
-        Time for completion: {estimated_time/60:.2f} min
-        Session Working directory: \\{output_path}\\
+        Log dpc/isr with xperf: {has_xperf}
+        Save ETL traces: {save_etls}
+        Load MSI Afterburner : {has_afterburner}
+        Benchmark CPUs: {"All" if custom_cores == [] else str(custom_cores).strip("[]")}
+        colored_output: {colored_output}
         Fullscreen: {fullscreen} {f"({x_res}x{y_res})" if not fullscreen else ""}
+        Sync liblava affinity: {sync_liblava_affinity}
     """
     print(runtime_info)
     input("    Press enter to start benchmarking...\n")
@@ -533,8 +537,6 @@ def main() -> int:
                         dpc_table.append(dpc_isrdata)
                     else:
                         isr_table.append(dpc_isrdata)
-
-    colored_output = colored_output and platform.release() != "" and int(platform.release()) >= 10
 
     if colored_output:
         green = "\x1b[92m"
