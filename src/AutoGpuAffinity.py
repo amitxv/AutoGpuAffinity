@@ -223,7 +223,7 @@ def main() -> int:
         print("error: administrator privileges required")
         return 1
 
-    version = "0.11.2"
+    version = "0.12.0"
 
     # change directory to location of program
     program_path = ""
