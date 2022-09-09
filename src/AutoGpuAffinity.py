@@ -223,7 +223,7 @@ def main() -> int:
         print("error: administrator privileges required")
         return 1
 
-    version = "0.12.0"
+    version = "0.12.1"
 
     # change directory to location of program
     program_path = ""
@@ -235,7 +235,12 @@ def main() -> int:
 
     config = parse_config("config.txt")
 
-    required_binaries = ["liblava\\lava-triangle.exe", "liblava\\res.zip", "PresentMon\\PresentMon.exe", "restart64\\restart64.exe"]
+    if platform.release() != "" and int(platform.release()) >= 10:
+        present_mon = "PresentMon-1.8.0-x64.exe"
+    else:
+        present_mon = "PresentMon-1.6.0-x64.exe"
+
+    required_binaries = ["liblava\\lava-triangle.exe", "liblava\\res.zip", f"PresentMon\\{present_mon}", "restart64\\restart64.exe"]
     if not all(os.path.exists(f"bin\\{x}") for x in required_binaries):
         print("error: missing binaries")
         return 1
@@ -347,7 +352,7 @@ def main() -> int:
 
         subprocess.run([xperf_path, "-stop"], **subprocess_null, check=False)
 
-    kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
+    kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
     for cpu in range(0, total_cpus):
         if custom_cores != [] and cpu not in custom_cores:
@@ -384,7 +389,7 @@ def main() -> int:
                 subprocess.run([xperf_path, "-on", "base+interrupt+dpc"], check=False)
 
             subprocess.Popen([
-                "bin\\PresentMon\\PresentMon.exe",
+                f"bin\\PresentMon\\{present_mon}",
                 "-stop_existing_session",
                 "-no_top",
                 "-timed", str(duration),
@@ -393,7 +398,7 @@ def main() -> int:
             ], **subprocess_null)
 
             time.sleep(duration + 5)
-            kill_processes("PresentMon.exe")
+            kill_processes(present_mon)
 
             if not os.path.exists(f"{output_path}\\CSVs\\{file_name}.csv"):
                 if has_xperf:
@@ -401,7 +406,7 @@ def main() -> int:
                         xperf_path,
                         "-d", f"{output_path}\\xperf\\raw\\{file_name}.etl"
                     ], **subprocess_null, check=False)
-                kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
+                kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
                 print("error: csv log unsuccessful, this is due to a missing dependency/ windows component")
                 return 1
 
@@ -412,11 +417,11 @@ def main() -> int:
                 ], **subprocess_null, check=False)
 
                 if not os.path.exists(f"{output_path}\\xperf\\raw\\{file_name}.etl"):
-                    kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
+                    kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
                     print("error: xperf etl log unsuccessful")
                     return 1
 
-        kill_processes("xperf.exe", "lava-triangle.exe", "PresentMon.exe")
+        kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
     print("info: begin parsing data, this may take a few minutes...")
     for cpu in range(0, total_cpus):
