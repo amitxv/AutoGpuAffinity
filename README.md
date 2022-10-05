@@ -41,6 +41,6 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 
 - After the tool has benchmarked each core, a table will be displayed with the results
 
-## Determine if results are reliable:
+## Determine if results are reliable
 
 Run the tool (not trials) two or three times. If the same core is consistently performant & no 0.005% Lows values are absurdly low compared to other results, then your results are reproducible & your testing environment is consistent. However, if the fps is dropping significantly, consider properly tuning your setup before using this tool

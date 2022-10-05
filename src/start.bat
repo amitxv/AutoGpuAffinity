@@ -6,11 +6,11 @@ setlocal EnableDelayedExpansion
 
 pushd "%~dp0"
 set "program_name=AutoGpuAffinity"
-if exist "!program_name!.py" (
-    "!program_name!.py"
+if exist ".\!program_name!.py" (
+    ".\!program_name!.py"
 ) else (
-    if exist "!program_name!.exe" (
-        "!program_name!.exe"
+    if exist ".\!program_name!.exe" (
+        ".\!program_name!.exe"
     ) else (
         echo error: !program_name! not found
     )
