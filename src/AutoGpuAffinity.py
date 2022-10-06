@@ -219,7 +219,7 @@ def main() -> int:
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
 
     runtime_info = f"""
-    AutoGpuAffinity v{version} - Automatic GPU affinity benchmarking with liblava
+    AutoGpuAffinity v{version}
     GitHub - https://github.com/amitxv
 
         {"Session Directory" : <24}.\\{output_path}
