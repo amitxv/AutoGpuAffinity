@@ -164,6 +164,7 @@ def main() -> int:
 
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("error: administrator privileges required")
+        return 1
 
     if getattr(sys, "frozen", False):
         os.chdir(os.path.dirname(sys.executable))
