@@ -285,7 +285,7 @@ def main() -> int:
         time.sleep(5)
 
         if cfg["afterburner_profile"]:
-            start_afterburner(cfg["afterburner_path"], cfg['afterburner_profile'])
+            start_afterburner(cfg["afterburner_path"], cfg["afterburner_profile"])
 
         affinity_args = []
         if cfg["sync_liblava_affinity"]:
@@ -300,38 +300,38 @@ def main() -> int:
         if cfg["dpcisr"]:
             subprocess.run([cfg["xperf_path"], "-on", "base+interrupt+dpc"], check=False)
 
-            subprocess.Popen([
-                f"bin\\PresentMon\\{present_mon}",
-                "-stop_existing_session",
-                "-no_top",
-                "-timed", str(cfg["duration"]),
-                "-process_name", "lava-triangle.exe",
-                "-output_file", f"{output_path}\\CSVs\\CPU-{cpu}.csv",
-            ], **subprocess_null)
+        subprocess.Popen([
+            f"bin\\PresentMon\\{present_mon}",
+            "-stop_existing_session",
+            "-no_top",
+            "-timed", str(cfg["duration"]),
+            "-process_name", "lava-triangle.exe",
+            "-output_file", f"{output_path}\\CSVs\\CPU-{cpu}.csv",
+        ], **subprocess_null)
 
-            time.sleep(cfg["duration"] + 5)
+        time.sleep(cfg["duration"] + 5)
 
-            if cfg["dpcisr"]:
-                subprocess.run([
-                    cfg["xperf_path"],
-                    "-d", f"{output_path}\\xperf\\CPU-{cpu}.etl"
-                ], **subprocess_null, check=False)
+        if cfg["dpcisr"]:
+            subprocess.run([
+                cfg["xperf_path"],
+                "-d", f"{output_path}\\xperf\\CPU-{cpu}.etl"
+            ], **subprocess_null, check=False)
 
-            kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
+        kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
-            if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}.csv"):
-                print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
-                return 1
+        if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}.csv"):
+            print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
+            return 1
 
-            if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.etl"):
-                print("error: xperf etl log unsuccessful")
-                return 1
+        if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.etl"):
+            print("error: xperf etl log unsuccessful")
+            return 1
 
     for cpu in range(0, cpu_count + 1):
         if cfg["custom_cores"] != [] and cpu not in cfg["custom_cores"]:
             continue
 
-        print(f"info: parsing data for CPU {cpu}, this may take a moment...")
+        print(f"info: parsing data for CPU {cpu}")
 
         frametimes = []
         with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="UTF-8") as csv_file:
@@ -433,6 +433,7 @@ def main() -> int:
         report_file.write(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
