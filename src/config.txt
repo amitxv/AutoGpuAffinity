@@ -47,4 +47,4 @@ y_res=1080
 // launch liblava with the same affinity as the gpu
 // setting this to 1 may improve the consistency of results due to minimized context switching
 // however overall fps will decrease significantly
-sync_liblava_affinity=1
+sync_liblava_affinity=0
