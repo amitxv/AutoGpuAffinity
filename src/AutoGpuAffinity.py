@@ -357,7 +357,7 @@ def main() -> int:
                 fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
 
         if cfg["stdev"]:
-            fps_data.append(f"{compute_frametimes(frametime_data, 'STDEV'):.2f}")
+            fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         if cfg["percentile"]:
             for value in [0.1, 0.01, 0.005]:
