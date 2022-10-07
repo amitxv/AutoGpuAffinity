@@ -171,7 +171,7 @@ def main() -> int:
     elif __file__:
         os.chdir(os.path.dirname(__file__))
 
-    version = "0.13.0"
+    version = "0.13.2"
     cfg = parse_config("config.txt")
     present_mon = "PresentMon-1.6.0-x64.exe"
     cpu_count = os.cpu_count()
@@ -317,14 +317,14 @@ def main() -> int:
                 "-d", f"{output_path}\\xperf\\CPU-{cpu}.etl"
             ], **subprocess_null, check=False)
 
+            if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.etl"):
+                print("error: xperf etl log unsuccessful")
+                return 1
+
         kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
         if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}.csv"):
             print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
-            return 1
-
-        if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.etl"):
-            print("error: xperf etl log unsuccessful")
             return 1
 
     for cpu in range(0, cpu_count + 1):
