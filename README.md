@@ -20,10 +20,10 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
     - Save the desired settings to a profile (e.g profile 1)
     - Configure the path along with the profile to load in **config.txt**
     
-- Download & extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases)
+- Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases)
 
-- Run **start.bat** & press enter when ready
+- Run **start.bat** and press enter when ready
 
-- After the tool has benchmarked each core, the GPU affinity will be reset to the Windows default & a table will be displayed with the results. The xperf report is located in the session directory
+- After the tool has benchmarked each core, the GPU affinity will be reset to the Windows default and a table will be displayed with the results. The xperf report is located in the session directory
 
-- Run the tool two or three times. If the same core is consistently performant & no 0.005% Lows values are absurdly low compared to other results, then your results are reproducible & your testing environment is consistent
+- Run the tool two or three times. If the same core is consistently performant and no 0.005% Lows values are absurdly low compared to other results, then your results are reproducible and your testing environment is consistent
