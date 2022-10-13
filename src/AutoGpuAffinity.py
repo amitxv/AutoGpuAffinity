@@ -237,7 +237,7 @@ def main() -> int:
     """
 
     print(textwrap.dedent(runtime_info))
-    input("input: press enter to start benchmarking...")
+    input("info: press enter to start benchmarking...")
 
     print("info: generating and preparing prerequisites")
     create_lava_cfg(cfg["fullscreen"], cfg["x_res"], cfg["y_res"])
