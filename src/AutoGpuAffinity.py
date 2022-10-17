@@ -160,7 +160,7 @@ def timer_resolution(enabled: bool) -> int:
 
 
 def main() -> int:
-    """cli entrypoint"""
+    """program entrypoint"""
 
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("error: administrator privileges required")
