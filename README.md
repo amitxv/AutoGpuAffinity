@@ -27,3 +27,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 - After the tool has benchmarked each core, the GPU affinity will be reset to the Windows default and a table will be displayed with the results. The xperf report is located in the session directory
 
 - Run the tool two or three times. If the same core is consistently performant and no 0.005% Lows values are absurdly low compared to other results, then your results are reproducible and your testing environment is consistent
+
+---
+
+Technically speaking, AutoGpuAffinity *can* be used as a regular benchmark if **custom_cores** is set to a single core in **config.txt**. If you do not usually configure the GPU driver affinity, the array can be set to **[0]** as the graphics kernel runs on CPU 0 by default. This results in a automated liblava benchmark completely independent to benchmarking the GPU driver affinity.
