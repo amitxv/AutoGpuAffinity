@@ -1,7 +1,3 @@
-"""AutoGpuAffinity"""
-
-
-from __future__ import annotations
 import sys
 import ctypes
 import os
@@ -14,12 +10,10 @@ import math
 import wmi
 from tabulate import tabulate
 
-
 subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 ntdll = ctypes.WinDLL("ntdll.dll")
 
-
-def parse_config(config_path: str) -> dict:
+def parse_config(config_path) -> dict:
     """parse a simple configuration file and return a dict of the settings/values"""
     config = {}
     with open(config_path, "r", encoding="UTF-8") as cfg_file:
@@ -33,8 +27,7 @@ def parse_config(config_path: str) -> dict:
                     config[setting] = value
     return config
 
-
-def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int) -> None:
+def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
     """creates the lava-triangle configuration file"""
     lava_triangle_folder = f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
     os.makedirs(lava_triangle_folder, exist_ok=True)
@@ -63,27 +56,23 @@ def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int
         for i in config_content:
             cfg_file.write(f"{i}\n")
 
-
-def start_afterburner(path: str, profile: int) -> None:
+def start_afterburner(path, profile) -> None:
     """starts msi afterburner and loads a profile"""
     subprocess.Popen([path, f"-Profile{profile}"])
     time.sleep(7)
     kill_processes("MSIAfterburner.exe")
 
-
-def kill_processes(*targets: str) -> None:
+def kill_processes(*targets) -> None:
     """kill windows processes"""
     for process in targets:
         subprocess.run(["taskkill", "/F", "/IM", process], **subprocess_null, check=False)
 
-
-def write_key(path: str, value_name: str, data_type: int, value_data: str | int) -> None:
+def write_key(path, value_name, data_type, value_data) -> None:
     """write keys to windows registry"""
     with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
         winreg.SetValueEx(key, value_name, 0, data_type, value_data)
 
-
-def delete_key(path: str, value_name: str) -> None:
+def delete_key(path, value_name) -> None:
     """delete keys in windows registry"""
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
@@ -94,15 +83,13 @@ def delete_key(path: str, value_name: str) -> None:
     except FileNotFoundError:
         pass
 
-
-def convert_affinity(cpu: int) -> int:
+def convert_affinity(cpu) -> int:
     """convert cpu affinity to the decimal representation"""
     affinity = 0
     affinity |= 1 << cpu
     return affinity
 
-
-def apply_affinity(hwids: list, action: int, dec_affinity: int = -1) -> None:
+def apply_affinity(hwids, action, dec_affinity = -1) -> None:
     """apply interrupt affinity policy to the graphics driver"""
     for hwid in hwids:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{hwid}\\Device Parameters\\Interrupt Management\\Affinity Policy"
@@ -117,8 +104,7 @@ def apply_affinity(hwids: list, action: int, dec_affinity: int = -1) -> None:
 
     subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
-
-def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> float:
+def compute_frametimes(frametime_data, metric, value = -1) -> float:
     """calculate various metrics based on frametime data"""
     result = 0
     if metric == "Max":
@@ -143,8 +129,7 @@ def compute_frametimes(frametime_data: dict, metric: str, value: float = -1) -> 
         result = math.sqrt(sum(dev2) / frametime_data["len"])
     return 1000 / result
 
-
-def timer_resolution(enabled: bool) -> int:
+def timer_resolution(enabled) -> int:
     """
     sets the process timer-resolution to 1000hz
     """
@@ -157,7 +142,6 @@ def timer_resolution(enabled: bool) -> int:
     if max_res.value <= 10000 and ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) == 0:
         return 0
     return 1
-
 
 def main() -> int:
     """program entrypoint"""
@@ -433,7 +417,6 @@ def main() -> int:
         report_file.write(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
 
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
