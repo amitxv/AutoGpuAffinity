@@ -6,7 +6,7 @@ setlocal EnableDelayedExpansion
 :: - Python 3.8.6 preferred
 :: - 7-Zip
 
-set "path_err=0"
+set "err=0"
 for %%a in (
     "python.exe"
     "pip.exe"
@@ -14,11 +14,11 @@ for %%a in (
 ) do (
     where %%a
     if not !errorlevel! == 0 (
-        set "path_err=1"
+        set "err=1"
         echo error: %%a not found in path
     )
 )
-if not !path_err! == 0 exit /b 1
+if not !err! == 0 exit /b 1
 
 set "CURRENT_DIR=%~dp0"
 set "CURRENT_DIR=!CURRENT_DIR:~0,-1!"
