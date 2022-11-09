@@ -16,8 +16,8 @@ ntdll = ctypes.WinDLL("ntdll.dll")
 def parse_config(config_path) -> dict:
     """parse a simple configuration file and return a dict of the settings/values"""
     config = {}
-    with open(config_path, "r", encoding="UTF-8") as cfg_file:
-        for line in cfg_file:
+    with open(config_path, "r", encoding="UTF-8") as f:
+        for line in f:
             if "//" not in line:
                 line = line.strip("\n")
                 setting, _equ, value = line.rpartition("=")
@@ -50,11 +50,11 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
         '        "x": 0,',
         '        "y": 0',
         "    }",
-        "}",
+        "}"
     ]
-    with open(lava_triangle_config, "a", encoding="UTF-8") as cfg_file:
+    with open(lava_triangle_config, "a", encoding="UTF-8") as f:
         for i in config_content:
-            cfg_file.write(f"{i}\n")
+            f.write(f"{i}\n")
 
 def start_afterburner(path, profile) -> None:
     """starts msi afterburner and loads a profile"""
@@ -318,8 +318,8 @@ def main() -> int:
         print(f"info: parsing data for CPU {cpu}")
 
         frametimes = []
-        with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="UTF-8") as csv_file:
-            for row in csv.DictReader(csv_file):
+        with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="UTF-8") as f:
+            for row in csv.DictReader(f):
                 if (milliseconds := row.get("MsBetweenPresents")) is not None:
                     frametimes.append(float(milliseconds))
                 elif (milliseconds := row.get("msBetweenPresents")) is not None:
@@ -412,9 +412,9 @@ def main() -> int:
                     new_value = str(inner_value).replace(green, "").replace(default, "")
                     master_table[outer_index][inner_index] = new_value
 
-    with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as report_file:
-        report_file.write(textwrap.dedent(runtime_info) + "\n")
-        report_file.write(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
+    with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as f:
+        f.write(textwrap.dedent(runtime_info) + "\n")
+        f.write(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
 
     return 0
 
