@@ -306,6 +306,22 @@ def main() -> int:
                 os.rmdir(output_path)
                 return 1
 
+            subprocess.run([
+                cfg["xperf_path"],
+                "-quiet",
+                "-i", f"{output_path}\\xperf\\CPU-{cpu}.etl",
+                "-o", f"{output_path}\\xperf\\CPU-{cpu}.txt",
+                "-a", "dpcisr"
+                ], check=False)
+
+            if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.txt"):
+                print("error: unable to generate dpcisr report")
+                os.rmdir(output_path)
+                return 1
+
+            if not cfg["save_etls"]:
+                os.remove(f"{output_path}\\xperf\\CPU-{cpu}.etl")
+
         kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
         if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}.csv"):
@@ -354,23 +370,6 @@ def main() -> int:
                 fps_data.append(f"{compute_frametimes(frametime_data, 'Lows', value):.2f}")
 
         master_table.append(fps_data)
-
-        if cfg["dpcisr"]:
-            subprocess.run([
-                cfg["xperf_path"],
-                "-quiet",
-                "-i", f"{output_path}\\xperf\\CPU-{cpu}.etl",
-                "-o", f"{output_path}\\xperf\\CPU-{cpu}.txt",
-                "-a", "dpcisr"
-                ], check=False)
-
-            if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.txt"):
-                print("error: unable to generate dpcisr report")
-                os.rmdir(output_path)
-                return 1
-
-            if not cfg["save_etls"]:
-                os.remove(f"{output_path}\\xperf\\CPU-{cpu}.etl")
 
     if cfg["colored_output"]:
         green = "\x1b[92m"
