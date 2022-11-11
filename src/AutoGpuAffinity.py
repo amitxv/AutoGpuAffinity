@@ -248,11 +248,9 @@ def main() -> int:
         for metric in [0.1, 0.01, 0.005]:
             master_table[0].append(f"{metric}% Low")
 
-    if cfg["dpcisr"]:
-        os.mkdir(f"{output_path}\\xperf")
-
     # stop any existing trace sessions and processes
     if cfg["dpcisr"]:
+        os.mkdir(f"{output_path}\\xperf")
         subprocess.run([cfg["xperf_path"], "-stop"], **subprocess_null, check=False)
     kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
