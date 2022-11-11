@@ -303,12 +303,14 @@ def main() -> int:
 
             if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.etl"):
                 print("error: xperf etl log unsuccessful")
+                os.rmdir(output_path)
                 return 1
 
         kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
         if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}.csv"):
             print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
+            os.rmdir(output_path)
             return 1
 
     for cpu in range(0, cpu_count + 1):
@@ -364,6 +366,7 @@ def main() -> int:
 
             if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.txt"):
                 print("error: unable to generate dpcisr report")
+                os.rmdir(output_path)
                 return 1
 
             if not cfg["save_etls"]:
