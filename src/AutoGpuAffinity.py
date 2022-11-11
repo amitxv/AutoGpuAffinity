@@ -104,7 +104,7 @@ def apply_affinity(hwids, action, dec_affinity = -1) -> None:
 
     subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
-def compute_frametimes(frametime_data, metric, value = -1) -> float:
+def compute_frametimes(frametime_data, metric, value = -1.0) -> float:
     """calculate various metrics based on frametime data"""
     result = 0
     if metric == "Max":
