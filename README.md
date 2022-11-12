@@ -2,7 +2,7 @@
 
 <img src="./img/exampleoutput.png" width="1000"> 
 
-Single-core GPU driver affinity benchmarking..
+Single-core GPU driver affinity benchmarking.
 
 Contact: https://twitter.com/amitxv
 
