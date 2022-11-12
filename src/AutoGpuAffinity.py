@@ -142,6 +142,11 @@ def timer_resolution(enabled) -> int:
         return 0
     return 1
 
+def str_to_list(str_array, array_type):
+    str_array = [array_type(x) for x in str_array[1:-1].replace(" ", "").split(",") if x != ""]
+    str_array = list(dict.fromkeys(str_array)) # remove duplicates
+    return str_array
+
 def main() -> int:
     """program entrypoint"""
 
@@ -189,13 +194,18 @@ def main() -> int:
     if cfg["afterburner_profile"] and not os.path.exists(cfg["afterburner_path"]):
         cfg["afterburner_profile"] = 0
 
-    if not (cfg["custom_cores"].startswith("[") and cfg["custom_cores"].endswith("]")):
-        print("error: surrounding brackets for custom_cores value not found")
-        return 1
+    for arr in ["custom_cores", "metric_values"]:
+        if not (cfg[arr].startswith("[") and cfg[arr].endswith("]")):
+            print(f"error: surrounding brackets for {arr} value not found")
+            return 1
 
-    cfg["custom_cores"] = [int(x) for x in cfg["custom_cores"][1:-1].replace(" ", "").split(",") if x != "" and 0 <= int(x) <= cpu_count]
-    cfg["custom_cores"] = list(dict.fromkeys(cfg["custom_cores"]))
+    cfg["custom_cores"] = str_to_list(cfg["custom_cores"], int)
+    cfg["custom_cores"] = [x for x in cfg["custom_cores"] if 0 <= x <= cpu_count]
     cfg["custom_cores"].sort()
+
+    cfg["metric_values"] = str_to_list(cfg["metric_values"], float)
+    cfg["metric_values"] = [x for x in cfg["metric_values"] if 0 <= x <= 100]
+    cfg["metric_values"].sort(reverse=True)
 
     cfg["colored_output"] = cfg["colored_output"] and sys.getwindowsversion().major >= 10
 
@@ -240,11 +250,11 @@ def main() -> int:
         master_table[0].append("STDEV")
 
     if cfg["percentile"]:
-        for metric in [0.1, 0.01, 0.005]:
+        for metric in cfg["metric_values"]:
             master_table[0].append(f"{metric} %ile")
 
     if cfg["lows"]:
-        for metric in [0.1, 0.01, 0.005]:
+        for metric in cfg["metric_values"]:
             master_table[0].append(f"{metric}% Low")
 
     # stop any existing trace sessions and processes
@@ -359,11 +369,11 @@ def main() -> int:
             fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         if cfg["percentile"]:
-            for value in [0.1, 0.01, 0.005]:
+            for value in cfg["metric_values"]:
                 fps_data.append(f"{compute_frametimes(frametime_data, 'Percentile', value):.2f}")
 
         if cfg["lows"]:
-            for value in [0.1, 0.01, 0.005]:
+            for value in cfg["metric_values"]:
                 fps_data.append(f"{compute_frametimes(frametime_data, 'Lows', value):.2f}")
 
         master_table.append(fps_data)

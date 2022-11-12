@@ -37,6 +37,7 @@ minimum=1
 stdev=1
 percentile=1
 lows=1
+metric_values=[1,0.1,0.01,0.005]
 
 // liblava config options
 // resolution only customizable if fullscreen=0
