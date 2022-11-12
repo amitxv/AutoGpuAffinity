@@ -7,6 +7,7 @@ import subprocess
 import winreg
 import csv
 import math
+import json
 import wmi
 from tabulate import tabulate
 
@@ -36,25 +37,23 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
     if os.path.exists(lava_triangle_config):
         os.remove(lava_triangle_config)
 
-    config_content = [
-        "{",
-        '    "default": {',
-        '        "decorated": true,',
-        '        "floating": false,',
-        f'        "fullscreen": {"true" if enable_fullscren else "false"},',
-        f'        "height": {y_resolution},',
-        '        "maximized": false,',
-        '        "monitor": 0,',
-        '        "resizable": true,',
-        f'        "width": {x_resolution},',
-        '        "x": 0,',
-        '        "y": 0',
-        "    }",
-        "}"
-    ]
+    config_content = {
+        "default": {
+            "decorated": True,
+            "floating": False,
+            "fullscreen": bool(enable_fullscren),
+            "height": y_resolution,
+            "maximized": False,
+            "monitor": 0,
+            "resizable": True,
+            "width": x_resolution,
+            "x": 0,
+            "y": 0
+        }
+    }
+
     with open(lava_triangle_config, "a", encoding="UTF-8") as f:
-        for i in config_content:
-            f.write(f"{i}\n")
+        json.dump(config_content, f, indent=4)
 
 def start_afterburner(path, profile) -> None:
     """starts msi afterburner and loads a profile"""
