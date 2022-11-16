@@ -6,13 +6,22 @@ setlocal EnableDelayedExpansion
 :: - Python 3.8.6 preferred
 :: - 7-Zip
 
+echo info: checking for an internet connection
+ping 1.1.1.1 > nul 2>&1
+if not !errorlevel! == 0 (
+    echo error: no internet connection
+    echo info: press any key to continue
+    pause > nul 2>&1
+    exit /b 1
+)
+
 set "err=0"
 for %%a in (
-    "python.exe"
-    "pip.exe"
-    "7z.exe"
+    python.exe
+    pip.exe
+    7z.exe
 ) do (
-    where %%a
+    where %%a > nul 2>&1
     if not !errorlevel! == 0 (
         set "err=1"
         echo error: %%a not found in path
