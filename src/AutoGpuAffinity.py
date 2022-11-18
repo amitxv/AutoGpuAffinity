@@ -120,13 +120,12 @@ def compute_frametimes(frametime_data, metric, value = -1.0) -> float:
             current_total += present
             if current_total >= value / 100 * frametime_data["sum"]:
                 result = present
-                break
     elif metric == "STDEV":
         mean = frametime_data["sum"] / frametime_data["len"]
         dev = [x - mean for x in frametime_data["frametimes"]]
         dev2 = [x * x for x in dev]
         result = math.sqrt(sum(dev2) / frametime_data["len"])
-    return 1000 / result
+    return result
 
 def timer_resolution(enabled) -> int:
     """
@@ -363,18 +362,18 @@ def main() -> int:
 
         for metric in ["Max", "Avg", "Min"]:
             if metric in master_table[0]:
-                fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
+                fps_data.append(f"{1000 / compute_frametimes(frametime_data, metric):.2f}")
 
         if cfg["stdev"]:
             fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         if cfg["percentile"]:
             for value in cfg["metric_values"]:
-                fps_data.append(f"{compute_frametimes(frametime_data, 'Percentile', value):.2f}")
+                fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Percentile', value):.2f}")
 
         if cfg["lows"]:
             for value in cfg["metric_values"]:
-                fps_data.append(f"{compute_frametimes(frametime_data, 'Lows', value):.2f}")
+                fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Lows', value):.2f}")
 
         master_table.append(fps_data)
 
