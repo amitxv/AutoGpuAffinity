@@ -204,6 +204,7 @@ def main() -> int:
 
     cfg["metric_values"] = str_to_list(cfg["metric_values"], float)
     cfg["metric_values"] = [x for x in cfg["metric_values"] if 0 <= x <= 100]
+    cfg["metric_values"] = [int(x) if x.is_integer() else x for x in cfg["metric_values"]] # remove trailing zeros from values
     cfg["metric_values"].sort(reverse=True)
 
     cfg["colored_output"] = cfg["colored_output"] and sys.getwindowsversion().major >= 10
