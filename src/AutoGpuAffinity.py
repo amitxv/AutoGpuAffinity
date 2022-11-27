@@ -120,6 +120,7 @@ def compute_frametimes(frametime_data, metric, value = -1.0) -> float:
             current_total += present
             if current_total >= value / 100 * frametime_data["sum"]:
                 result = present
+                break
     elif metric == "STDEV":
         mean = frametime_data["sum"] / frametime_data["len"]
         dev = [x - mean for x in frametime_data["frametimes"]]
