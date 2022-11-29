@@ -1,10 +1,10 @@
-## AutoGpuAffinity
+# AutoGpuAffinity
 
-<img src="./img/exampleoutput.png" width="1000"> 
+<img src="./img/exampleoutput.png" width="1000">
 
 Single-core GPU driver affinity benchmarking.
 
-Contact: https://twitter.com/amitxv
+Contact: <https://twitter.com/amitxv>
 
 I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests.
 
@@ -19,7 +19,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 
     - Save the desired settings to a profile (e.g profile 1)
     - Configure the path along with the profile to load in **config.txt**
-    
+
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases)
 
 - Run **start.bat** and press enter when ready
