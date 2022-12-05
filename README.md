@@ -1,6 +1,6 @@
 # AutoGpuAffinity
 
-<img src="./img/exampleoutput.png" width="1000">
+<img src="./img/example-output.png" width="1000">
 
 Single-core GPU driver affinity benchmarking
 
