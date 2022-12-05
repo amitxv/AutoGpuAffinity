@@ -159,7 +159,7 @@ def main() -> int:
     elif __file__:
         os.chdir(os.path.dirname(__file__))
 
-    version = "0.13.3"
+    version = "0.14.0"
     cfg = parse_config("config.txt")
     present_mon = "PresentMon-1.6.0-x64.exe"
     cpu_count = os.cpu_count()
