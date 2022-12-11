@@ -4,8 +4,6 @@
 
 Single-core GPU driver affinity benchmarking
 
-Contact: <https://twitter.com/amitxv>
-
 I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests.
 
 ## Usage
