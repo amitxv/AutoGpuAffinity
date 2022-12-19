@@ -14,6 +14,7 @@ from tabulate import tabulate
 subprocess_null = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 ntdll = ctypes.WinDLL("ntdll.dll")
 
+
 def parse_config(config_path) -> dict:
     """parse a simple configuration file and return a dict of the settings/values"""
     config = {}
@@ -28,9 +29,12 @@ def parse_config(config_path) -> dict:
                     config[setting] = value
     return config
 
+
 def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
     """creates the lava-triangle configuration file"""
-    lava_triangle_folder = f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
+    lava_triangle_folder = (
+        f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
+    )
     os.makedirs(lava_triangle_folder, exist_ok=True)
     lava_triangle_config = f"{lava_triangle_folder}\\window.json"
 
@@ -48,12 +52,13 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
             "resizable": True,
             "width": x_resolution,
             "x": 0,
-            "y": 0
+            "y": 0,
         }
     }
 
     with open(lava_triangle_config, "a", encoding="UTF-8") as f:
         json.dump(config_content, f, indent=4)
+
 
 def start_afterburner(path, profile) -> None:
     """starts msi afterburner and loads a profile"""
@@ -61,20 +66,30 @@ def start_afterburner(path, profile) -> None:
     time.sleep(7)
     kill_processes("MSIAfterburner.exe")
 
+
 def kill_processes(*targets) -> None:
     """kill windows processes"""
     for process in targets:
-        subprocess.run(["taskkill", "/F", "/IM", process], **subprocess_null, check=False)
+        subprocess.run(
+            ["taskkill", "/F", "/IM", process], **subprocess_null, check=False
+        )
+
 
 def write_key(path, value_name, data_type, value_data) -> None:
     """write keys to windows registry"""
     with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
         winreg.SetValueEx(key, value_name, 0, data_type, value_data)
 
+
 def delete_key(path, value_name) -> None:
     """delete keys in windows registry"""
     try:
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as key:
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            path,
+            0,
+            winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
+        ) as key:
             try:
                 winreg.DeleteValue(key, value_name)
             except FileNotFoundError:
@@ -82,13 +97,15 @@ def delete_key(path, value_name) -> None:
     except FileNotFoundError:
         pass
 
+
 def convert_affinity(cpu) -> int:
     """convert cpu affinity to the decimal representation"""
     affinity = 0
     affinity |= 1 << cpu
     return affinity
 
-def apply_affinity(hwids, action, dec_affinity = -1) -> None:
+
+def apply_affinity(hwids, action, dec_affinity=-1) -> None:
     """apply interrupt affinity policy to the graphics driver"""
     for hwid in hwids:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{hwid}\\Device Parameters\\Interrupt Management\\Affinity Policy"
@@ -103,7 +120,8 @@ def apply_affinity(hwids, action, dec_affinity = -1) -> None:
 
     subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
-def compute_frametimes(frametime_data, metric, value = -1.0) -> float:
+
+def compute_frametimes(frametime_data, metric, value=-1.0) -> float:
     """calculate various metrics based on frametime data"""
     result = 0
     if metric == "Max":
@@ -113,7 +131,9 @@ def compute_frametimes(frametime_data, metric, value = -1.0) -> float:
     elif metric == "Min":
         result = frametime_data["max"]
     elif metric == "Percentile" and value > -1:
-        result = frametime_data["frametimes"][math.ceil(value / 100 * frametime_data["len"]) - 1]
+        result = frametime_data["frametimes"][
+            math.ceil(value / 100 * frametime_data["len"]) - 1
+        ]
     elif metric == "Lows" and value > -1:
         current_total = 0
         for present in frametime_data["frametimes"]:
@@ -128,6 +148,7 @@ def compute_frametimes(frametime_data, metric, value = -1.0) -> float:
         result = math.sqrt(sum(dev2) / frametime_data["len"])
     return result
 
+
 def timer_resolution(enabled) -> int:
     """
     sets the process timer-resolution to 1000hz
@@ -136,16 +157,25 @@ def timer_resolution(enabled) -> int:
     max_res = ctypes.c_ulong()
     curr_res = ctypes.c_ulong()
 
-    ntdll.NtQueryTimerResolution(ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res))
+    ntdll.NtQueryTimerResolution(
+        ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res)
+    )
 
-    if max_res.value <= 10000 and ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) == 0:
+    if (
+        max_res.value <= 10000
+        and ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) == 0
+    ):
         return 0
     return 1
 
+
 def str_to_list(str_array, array_type):
-    str_array = [array_type(x) for x in str_array[1:-1].replace(" ", "").split(",") if x != ""]
-    str_array = list(dict.fromkeys(str_array)) # remove duplicates
+    str_array = [
+        array_type(x) for x in str_array[1:-1].replace(" ", "").split(",") if x != ""
+    ]
+    str_array = list(dict.fromkeys(str_array))  # remove duplicates
     return str_array
+
 
 def main() -> int:
     """program entrypoint"""
@@ -180,7 +210,15 @@ def main() -> int:
         print("error: no graphics card found")
         return 1
 
-    if not all(os.path.exists(f"bin\\{x}") for x in ["liblava\\lava-triangle.exe", "liblava\\res.zip", f"PresentMon\\{present_mon}", "restart64\\restart64.exe"]):
+    if not all(
+        os.path.exists(f"bin\\{x}")
+        for x in [
+            "liblava\\lava-triangle.exe",
+            "liblava\\res.zip",
+            f"PresentMon\\{present_mon}",
+            "restart64\\restart64.exe",
+        ]
+    ):
         print("error: missing binaries")
         return 1
 
@@ -205,10 +243,14 @@ def main() -> int:
 
     cfg["metric_values"] = str_to_list(cfg["metric_values"], float)
     cfg["metric_values"] = [x for x in cfg["metric_values"] if 0 <= x <= 100]
-    cfg["metric_values"] = [int(x) if x.is_integer() else x for x in cfg["metric_values"]] # remove trailing zeros from values
+    cfg["metric_values"] = [
+        int(x) if x.is_integer() else x for x in cfg["metric_values"]
+    ]  # remove trailing zeros from values
     cfg["metric_values"].sort(reverse=True)
 
-    cfg["colored_output"] = cfg["colored_output"] and sys.getwindowsversion().major >= 10
+    cfg["colored_output"] = (
+        cfg["colored_output"] and sys.getwindowsversion().major >= 10
+    )
 
     os.makedirs("captures", exist_ok=True)
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
@@ -283,44 +325,63 @@ def main() -> int:
         if cfg["sync_liblava_affinity"]:
             affinity_args = ["/affinity", str(dec_affinity)]
 
-        subprocess.run(["start", *affinity_args, "bin\\liblava\\lava-triangle.exe"], shell=True, check=False)
+        subprocess.run(
+            ["start", *affinity_args, "bin\\liblava\\lava-triangle.exe"],
+            shell=True,
+            check=False,
+        )
         time.sleep(5)
 
         if cfg["cache_duration"] != 0:
             time.sleep(cfg["cache_duration"])
 
         if cfg["dpcisr"]:
-            subprocess.run([cfg["xperf_path"], "-on", "base+interrupt+dpc"], check=False)
+            subprocess.run(
+                [cfg["xperf_path"], "-on", "base+interrupt+dpc"], check=False
+            )
 
-        subprocess.Popen([
-            f"bin\\PresentMon\\{present_mon}",
-            "-stop_existing_session",
-            "-no_top",
-            "-timed", str(cfg["duration"]),
-            "-process_name", "lava-triangle.exe",
-            "-output_file", f"{output_path}\\CSVs\\CPU-{cpu}.csv",
-        ], **subprocess_null)
+        subprocess.Popen(
+            [
+                f"bin\\PresentMon\\{present_mon}",
+                "-stop_existing_session",
+                "-no_top",
+                "-timed",
+                str(cfg["duration"]),
+                "-process_name",
+                "lava-triangle.exe",
+                "-output_file",
+                f"{output_path}\\CSVs\\CPU-{cpu}.csv",
+            ],
+            **subprocess_null,
+        )
 
         time.sleep(cfg["duration"] + 5)
 
         if cfg["dpcisr"]:
-            subprocess.run([
-                cfg["xperf_path"],
-                "-d", f"{output_path}\\xperf\\CPU-{cpu}.etl"
-            ], **subprocess_null, check=False)
+            subprocess.run(
+                [cfg["xperf_path"], "-d", f"{output_path}\\xperf\\CPU-{cpu}.etl"],
+                **subprocess_null,
+                check=False,
+            )
 
             if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.etl"):
                 print("error: xperf etl log unsuccessful")
                 os.rmdir(output_path)
                 return 1
 
-            subprocess.run([
-                cfg["xperf_path"],
-                "-quiet",
-                "-i", f"{output_path}\\xperf\\CPU-{cpu}.etl",
-                "-o", f"{output_path}\\xperf\\CPU-{cpu}.txt",
-                "-a", "dpcisr"
-                ], check=False)
+            subprocess.run(
+                [
+                    cfg["xperf_path"],
+                    "-quiet",
+                    "-i",
+                    f"{output_path}\\xperf\\CPU-{cpu}.etl",
+                    "-o",
+                    f"{output_path}\\xperf\\CPU-{cpu}.txt",
+                    "-a",
+                    "dpcisr",
+                ],
+                check=False,
+            )
 
             if not os.path.exists(f"{output_path}\\xperf\\CPU-{cpu}.txt"):
                 print("error: unable to generate dpcisr report")
@@ -333,7 +394,9 @@ def main() -> int:
         kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
 
         if not os.path.exists(f"{output_path}\\CSVs\\CPU-{cpu}.csv"):
-            print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
+            print(
+                "error: csv log unsuccessful, this may be due to a missing dependency or windows component"
+            )
             os.rmdir(output_path)
             return 1
 
@@ -364,18 +427,24 @@ def main() -> int:
 
         for metric in ["Max", "Avg", "Min"]:
             if metric in master_table[0]:
-                fps_data.append(f"{1000 / compute_frametimes(frametime_data, metric):.2f}")
+                fps_data.append(
+                    f"{1000 / compute_frametimes(frametime_data, metric):.2f}"
+                )
 
         if cfg["stdev"]:
             fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         if cfg["percentile"]:
             for value in cfg["metric_values"]:
-                fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Percentile', value):.2f}")
+                fps_data.append(
+                    f"{1000 / compute_frametimes(frametime_data, 'Percentile', value):.2f}"
+                )
 
         if cfg["lows"]:
             for value in cfg["metric_values"]:
-                fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Lows', value):.2f}")
+                fps_data.append(
+                    f"{1000 / compute_frametimes(frametime_data, 'Lows', value):.2f}"
+                )
 
         master_table.append(fps_data)
 
@@ -412,7 +481,12 @@ def main() -> int:
                 master_table[row][column] = new_value
 
     print(textwrap.dedent(runtime_info))
-    print(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f") + "\n")
+    print(
+        tabulate(
+            master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"
+        )
+        + "\n"
+    )
 
     # remove color codes from tables
     if cfg["colored_output"]:
@@ -424,9 +498,14 @@ def main() -> int:
 
     with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as f:
         f.write(textwrap.dedent(runtime_info) + "\n")
-        f.write(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"))
+        f.write(
+            tabulate(
+                master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"
+            )
+        )
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
