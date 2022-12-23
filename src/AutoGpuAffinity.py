@@ -18,7 +18,7 @@ ntdll = ctypes.WinDLL("ntdll.dll")
 def parse_config(config_path) -> dict:
     """parse a simple configuration file and return a dict of the settings/values"""
     config = {}
-    with open(config_path, "r", encoding="UTF-8") as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         for line in f:
             if "//" not in line:
                 line = line.strip("\n")
@@ -56,7 +56,7 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
         }
     }
 
-    with open(lava_triangle_config, "a", encoding="UTF-8") as f:
+    with open(lava_triangle_config, "a", encoding="utf-8") as f:
         json.dump(config_content, f, indent=4)
 
 
@@ -407,7 +407,7 @@ def main() -> int:
         print(f"info: parsing data for CPU {cpu}")
 
         frametimes = []
-        with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="UTF-8") as f:
+        with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 if (milliseconds := row.get("MsBetweenPresents")) is not None:
                     frametimes.append(float(milliseconds))
@@ -496,7 +496,7 @@ def main() -> int:
                     new_value = str(inner_value).replace(green, "").replace(default, "")
                     master_table[outer_index][inner_index] = new_value
 
-    with open(f"{output_path}\\report.txt", "a", encoding="UTF-8") as f:
+    with open(f"{output_path}\\report.txt", "a", encoding="utf-8") as f:
         f.write(textwrap.dedent(runtime_info) + "\n")
         f.write(
             tabulate(
