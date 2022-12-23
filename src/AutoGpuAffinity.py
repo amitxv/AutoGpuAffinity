@@ -18,8 +18,8 @@ ntdll = ctypes.WinDLL("ntdll.dll")
 def parse_config(config_path) -> dict:
     """parse a simple configuration file and return a dict of the settings/values"""
     config = {}
-    with open(config_path, "r", encoding="utf-8") as f:
-        for line in f:
+    with open(config_path, "r", encoding="utf-8") as file:
+        for line in file:
             if "//" not in line:
                 line = line.strip("\n")
                 setting, _equ, value = line.rpartition("=")
@@ -56,8 +56,8 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution) -> None:
         }
     }
 
-    with open(lava_triangle_config, "a", encoding="utf-8") as f:
-        json.dump(config_content, f, indent=4)
+    with open(lava_triangle_config, "a", encoding="utf-8") as file:
+        json.dump(config_content, file, indent=4)
 
 
 def start_afterburner(path, profile) -> None:
@@ -407,8 +407,8 @@ def main() -> int:
         print(f"info: parsing data for CPU {cpu}")
 
         frametimes = []
-        with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="utf-8") as f:
-            for row in csv.DictReader(f):
+        with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="utf-8") as file:
+            for row in csv.DictReader(file):
                 if (milliseconds := row.get("MsBetweenPresents")) is not None:
                     frametimes.append(float(milliseconds))
                 elif (milliseconds := row.get("msBetweenPresents")) is not None:
@@ -496,9 +496,9 @@ def main() -> int:
                     new_value = str(inner_value).replace(green, "").replace(default, "")
                     master_table[outer_index][inner_index] = new_value
 
-    with open(f"{output_path}\\report.txt", "a", encoding="utf-8") as f:
-        f.write(textwrap.dedent(runtime_info) + "\n")
-        f.write(
+    with open(f"{output_path}\\report.txt", "a", encoding="utf-8") as file:
+        file.write(textwrap.dedent(runtime_info) + "\n")
+        file.write(
             tabulate(
                 master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f"
             )
