@@ -34,9 +34,6 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution):
     os.makedirs(lava_triangle_folder, exist_ok=True)
     lava_triangle_config = f"{lava_triangle_folder}\\window.json"
 
-    if os.path.exists(lava_triangle_config):
-        os.remove(lava_triangle_config)
-
     config_content = {
         "default": {
             "decorated": True,
@@ -52,7 +49,7 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution):
         }
     }
 
-    with open(lava_triangle_config, "a", encoding="utf-8") as file:
+    with open(lava_triangle_config, "w", encoding="utf-8") as file:
         json.dump(config_content, file, indent=4)
 
 
