@@ -379,12 +379,13 @@ def main():
                     frametimes.append(float(milliseconds))
         frametimes = sorted(frametimes, reverse=True)
 
-        frametime_data = {}
-        frametime_data["frametimes"] = frametimes
-        frametime_data["min"] = min(frametimes)
-        frametime_data["max"] = max(frametimes)
-        frametime_data["sum"] = sum(frametimes)
-        frametime_data["len"] = len(frametimes)
+        frametime_data = {
+            "frametimes": frametimes,
+            "min": min(frametimes),
+            "max": max(frametimes),
+            "sum": sum(frametimes),
+            "len": len(frametimes),
+        }
 
         fps_data = []
         fps_data.append(f"CPU {cpu}")
