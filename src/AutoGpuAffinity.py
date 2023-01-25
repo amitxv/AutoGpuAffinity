@@ -64,27 +64,6 @@ def kill_processes(*targets):
         subprocess.run(["taskkill", "/F", "/IM", process], **stdnull, check=False)
 
 
-def write_key(path, value_name, data_type, value_data):
-    with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
-        winreg.SetValueEx(key, value_name, 0, data_type, value_data)
-
-
-def delete_key(path, value_name):
-    try:
-        with winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            path,
-            0,
-            winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
-        ) as key:
-            try:
-                winreg.DeleteValue(key, value_name)
-            except FileNotFoundError:
-                pass
-    except FileNotFoundError:
-        pass
-
-
 def convert_affinity(cpu):
     affinity = 0
     affinity |= 1 << cpu
@@ -97,11 +76,20 @@ def apply_affinity(hwids, action, dec_affinity=-1):
         if action == 1 and dec_affinity > -1:
             bin_affinity = bin(dec_affinity).replace("0b", "")
             le_hex = int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00")
-            write_key(policy_path, "DevicePolicy", 4, 4)
-            write_key(policy_path, "AssignmentSetOverride", 3, le_hex)
+
+            with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, policy_path) as key:
+                winreg.SetValueEx(key, "DevicePolicy", 0, 4, 4)
+                winreg.SetValueEx(key, "AssignmentSetOverride", 0, 3, le_hex)
+
         elif action == 0:
-            delete_key(policy_path, "DevicePolicy")
-            delete_key(policy_path, "AssignmentSetOverride")
+            try:
+                with winreg.OpenKey(
+                    winreg.HKEY_LOCAL_MACHINE, policy_path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY
+                ) as key:
+                    winreg.DeleteValue(key, "DevicePolicy")
+                    winreg.DeleteValue(key, "AssignmentSetOverride")
+            except FileNotFoundError:
+                pass
 
     subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
