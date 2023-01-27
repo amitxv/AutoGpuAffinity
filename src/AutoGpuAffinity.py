@@ -19,13 +19,15 @@ def parse_config(config_path):
     config = {}
     with open(config_path, "r", encoding="utf-8") as file:
         for line in file:
-            if "//" not in line:
-                line = line.strip("\n")
-                setting, _equ, value = line.rpartition("=")
-                if setting != "" and value != "":
-                    if value.isdigit():
-                        value = int(value)
-                    config[setting] = value
+            if line.startswith("//"):
+                continue
+
+            line = line.strip("\n")
+            setting, _, value = line.rpartition("=")
+
+            if setting and value:
+                config[setting] = value
+
     return config
 
 
@@ -180,15 +182,15 @@ def main():
         print("error: missing binaries")
         return
 
-    if (cfg["cache_duration"] < 0) or (cfg["duration"] <= 0):
+    if (int(cfg["cache_duration"]) < 0) or (int(cfg["duration"]) <= 0):
         print("error: invalid durations in config")
         return
 
-    if cfg["dpcisr"] and not os.path.exists(cfg["xperf_path"]):
-        cfg["dpcisr"] = 0
+    if int(cfg["dpcisr"]) and not os.path.exists(cfg["xperf_path"]):
+        cfg["dpcisr"] = "0"
 
-    if cfg["afterburner_profile"] and not os.path.exists(cfg["afterburner_path"]):
-        cfg["afterburner_profile"] = 0
+    if int(cfg["afterburner_profile"]) > 0 and not os.path.exists(cfg["afterburner_path"]):
+        cfg["afterburner_profile"] = "0"
 
     for arr in ["custom_cores", "metric_values"]:
         if not (cfg[arr].startswith("[") and cfg[arr].endswith("]")):
@@ -206,7 +208,7 @@ def main():
     ]  # remove trailing zeros from values
     cfg["metric_values"].sort(reverse=True)
 
-    cfg["colored_output"] = cfg["colored_output"] and sys.getwindowsversion().major >= 10
+    cfg["colored_output"] = int(cfg["colored_output"]) and sys.getwindowsversion().major >= 10
 
     os.makedirs("captures", exist_ok=True)
     output_path = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
@@ -219,45 +221,45 @@ def main():
         {"Cache Duration" : <24}{cfg["cache_duration"]} seconds
         {"Benchmark Duration" : <24}{cfg["duration"]} seconds
         {"Benchmark CPUs" : <24}{"All" if cfg["custom_cores"] == [] else str(cfg["custom_cores"])[1:-1].replace(" ", "")}
-        {"Estimated Time" : <24}{round((cpu_count * (10 + (7 * cfg['afterburner_profile']) + cfg["cache_duration"] + (cfg["duration"] + 5)))/60)} minutes approx
-        {"Load Afterburner" : <24}{bool(cfg["afterburner_profile"])} {f"(profile {cfg['afterburner_profile']})" if cfg["afterburner_profile"] else ""}
-        {"DPC/ISR Logging" : <24}{bool(cfg['dpcisr'])}
-        {"Save ETLs" : <24}{bool(cfg["save_etls"])}
-        {"Colored Output" : <24}{bool(cfg["colored_output"])}
-        {"Fullscreen" : <24}{bool(cfg["fullscreen"])} ({f"{user32.GetSystemMetrics(0)}x{user32.GetSystemMetrics(1)}" if cfg["fullscreen"] else f"{cfg['x_res']}x{cfg['y_res']}"})
-        {"Sync Affinity" : <24}{bool(cfg["sync_liblava_affinity"])}
+        {"Estimated Time" : <24}{round((cpu_count * (10 + (7 * int(cfg['afterburner_profile'])) + int(cfg["cache_duration"]) + (int(cfg["duration"]) + 5)))/60)} minutes approx
+        {"Load Afterburner" : <24}{int(cfg["afterburner_profile"]) > 0} {f"(profile {cfg['afterburner_profile']})" if int(cfg["afterburner_profile"]) > 0 else ""}
+        {"DPC/ISR Logging" : <24}{int(cfg['dpcisr']) > 0}
+        {"Save ETLs" : <24}{int(cfg["save_etls"]) > 0}
+        {"Colored Output" : <24}{int(cfg["colored_output"]) > 0}
+        {"Fullscreen" : <24}{int(cfg["fullscreen"]) > 0} ({f"{user32.GetSystemMetrics(0)}x{user32.GetSystemMetrics(1)}" if int(cfg["fullscreen"]) else f"{int(cfg['x_res'])}x{int(cfg['y_res'])}"})
+        {"Sync Affinity" : <24}{int(cfg["sync_liblava_affinity"]) > 0}
     """
 
     print(textwrap.dedent(runtime_info))
     input("info: press enter to start benchmarking...")
 
     print("info: generating and preparing prerequisites")
-    create_lava_cfg(cfg["fullscreen"], cfg["x_res"], cfg["y_res"])
+    create_lava_cfg(int(cfg["fullscreen"]), int(cfg["x_res"]), int(cfg["y_res"]))
     os.mkdir(output_path)
     os.mkdir(f"{output_path}\\CSVs")
 
-    if cfg["maximum"]:
+    if int(cfg["maximum"]):
         master_table[0].append("Max")
 
-    if cfg["avgerage"]:
+    if int(cfg["avgerage"]):
         master_table[0].append("Avg")
 
-    if cfg["minimum"]:
+    if int(cfg["minimum"]):
         master_table[0].append("Min")
 
-    if cfg["stdev"]:
+    if int(cfg["stdev"]):
         master_table[0].append("STDEV")
 
-    if cfg["percentile"]:
+    if int(cfg["percentile"]):
         for metric in cfg["metric_values"]:
             master_table[0].append(f"{metric} %ile")
 
-    if cfg["lows"]:
+    if int(cfg["lows"]):
         for metric in cfg["metric_values"]:
             master_table[0].append(f"{metric}% Low")
 
     # stop any existing trace sessions and processes
-    if cfg["dpcisr"]:
+    if int(cfg["dpcisr"]):
         os.mkdir(f"{output_path}\\xperf")
         subprocess.run([cfg["xperf_path"], "-stop"], **stdnull, check=False)
     kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
@@ -274,11 +276,11 @@ def main():
         apply_affinity(videocontroller_hwids, 1, dec_affinity)
         time.sleep(5)
 
-        if cfg["afterburner_profile"]:
+        if int(cfg["afterburner_profile"]) > 0:
             start_afterburner(cfg["afterburner_path"], cfg["afterburner_profile"])
 
         affinity_args = []
-        if cfg["sync_liblava_affinity"]:
+        if int(cfg["sync_liblava_affinity"]):
             affinity_args = ["/affinity", str(dec_affinity)]
 
         subprocess.run(
@@ -288,10 +290,10 @@ def main():
         )
         time.sleep(5)
 
-        if cfg["cache_duration"] != 0:
-            time.sleep(cfg["cache_duration"])
+        if int(cfg["cache_duration"]) > 0:
+            time.sleep(int(cfg["cache_duration"]))
 
-        if cfg["dpcisr"]:
+        if int(cfg["dpcisr"]):
             subprocess.run([cfg["xperf_path"], "-on", "base+interrupt+dpc"], check=False)
 
         subprocess.Popen(
@@ -300,7 +302,7 @@ def main():
                 "-stop_existing_session",
                 "-no_top",
                 "-timed",
-                str(cfg["duration"]),
+                cfg["duration"],
                 "-process_name",
                 "lava-triangle.exe",
                 "-output_file",
@@ -309,9 +311,9 @@ def main():
             **stdnull,
         )
 
-        time.sleep(cfg["duration"] + 5)
+        time.sleep(int(cfg["duration"]) + 5)
 
-        if cfg["dpcisr"]:
+        if int(cfg["dpcisr"]):
             subprocess.run(
                 [cfg["xperf_path"], "-d", f"{output_path}\\xperf\\CPU-{cpu}.etl"],
                 **stdnull,
@@ -342,7 +344,7 @@ def main():
                 os.rmdir(output_path)
                 return
 
-            if not cfg["save_etls"]:
+            if not int(cfg["save_etls"]):
                 os.remove(f"{output_path}\\xperf\\CPU-{cpu}.etl")
 
         kill_processes("xperf.exe", "lava-triangle.exe", present_mon)
@@ -382,20 +384,20 @@ def main():
             if metric in master_table[0]:
                 fps_data.append(f"{1000 / compute_frametimes(frametime_data, metric):.2f}")
 
-        if cfg["stdev"]:
+        if int(cfg["stdev"]):
             fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
-        if cfg["percentile"]:
+        if int(cfg["percentile"]):
             for value in cfg["metric_values"]:
                 fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Percentile', value):.2f}")
 
-        if cfg["lows"]:
+        if int(cfg["lows"]):
             for value in cfg["metric_values"]:
                 fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Lows', value):.2f}")
 
         master_table.append(fps_data)
 
-    if cfg["colored_output"]:
+    if int(cfg["colored_output"]):
         green = "\x1b[92m"
         default = "\x1b[0m"
         os.system("color")
@@ -431,7 +433,7 @@ def main():
     print(tabulate(master_table, headers="firstrow", tablefmt="fancy_grid", floatfmt=".2f") + "\n")
 
     # remove color codes from tables
-    if cfg["colored_output"]:
+    if int(cfg["colored_output"]):
         for outer_index, outer_value in enumerate(master_table):
             for inner_index, inner_value in enumerate(outer_value):
                 if green in str(inner_value) or default in str(inner_value):
