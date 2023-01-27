@@ -32,7 +32,7 @@ colored_output=1
 
 // customize metrics in table output
 maximum=0
-avgerage=1
+average=1
 minimum=1
 stdev=1
 percentile=1

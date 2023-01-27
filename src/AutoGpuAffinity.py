@@ -241,7 +241,7 @@ def main():
     if int(cfg["maximum"]):
         master_table[0].append("Max")
 
-    if int(cfg["avgerage"]):
+    if int(cfg["average"]):
         master_table[0].append("Avg")
 
     if int(cfg["minimum"]):
