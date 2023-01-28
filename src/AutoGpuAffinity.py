@@ -365,10 +365,10 @@ def main():
         with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="utf-8") as file:
             for row in csv.DictReader(file):
                 if (milliseconds := row.get("MsBetweenPresents")) is not None:
-                    frametimes.append(float(milliseconds))
+                    frametimes.append(1000 / float(milliseconds))
                 elif (milliseconds := row.get("msBetweenPresents")) is not None:
-                    frametimes.append(float(milliseconds))
-        frametimes = sorted(frametimes, reverse=True)
+                    frametimes.append(1000 / float(milliseconds))
+        frametimes = sorted(frametimes)
 
         frametime_data = {
             "frametimes": frametimes,
@@ -378,23 +378,22 @@ def main():
             "len": len(frametimes),
         }
 
-        fps_data = []
-        fps_data.append(f"CPU {cpu}")
+        fps_data = [f"CPU {cpu}"]
 
         for metric in ["Max", "Avg", "Min"]:
             if metric in master_table[0]:
-                fps_data.append(f"{1000 / compute_frametimes(frametime_data, metric):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
 
         if int(cfg["stdev"]):
             fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
 
         if int(cfg["percentile"]):
             for value in cfg["metric_values"]:
-                fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Percentile', value):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, 'Percentile', value):.2f}")
 
         if int(cfg["lows"]):
             for value in cfg["metric_values"]:
-                fps_data.append(f"{1000 / compute_frametimes(frametime_data, 'Lows', value):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, 'Lows', value):.2f}")
 
         master_table.append(fps_data)
 
