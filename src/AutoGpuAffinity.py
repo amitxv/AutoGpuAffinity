@@ -4,6 +4,7 @@ import os
 import textwrap
 import time
 import subprocess
+import traceback
 import winreg
 import csv
 import math
@@ -446,4 +447,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit()
+    except Exception:
+        print(traceback.format_exc())
+    finally:
+        input("info: press enter to exit")
