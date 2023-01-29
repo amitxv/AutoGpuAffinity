@@ -357,18 +357,18 @@ def main():
 
         for metric in ["Max", "Avg", "Min"]:
             if metric in master_table[0]:
-                fps_data.append(f"{compute_frametimes(frametime_data, metric):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, metric.lower()):.2f}")
 
         if int(cfg["stdev"]):
-            fps_data.append(f"-{compute_frametimes(frametime_data, 'STDEV'):.2f}")
+            fps_data.append(f"-{compute_frametimes(frametime_data, 'stdev'):.2f}")
 
         if int(cfg["percentile"]):
             for value in cfg["metric_values"]:
-                fps_data.append(f"{compute_frametimes(frametime_data, 'Percentile', value):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, 'percentile', value):.2f}")
 
         if int(cfg["lows"]):
             for value in cfg["metric_values"]:
-                fps_data.append(f"{compute_frametimes(frametime_data, 'Lows', value):.2f}")
+                fps_data.append(f"{compute_frametimes(frametime_data, 'lows', value):.2f}")
 
         master_table.append(fps_data)
 
