@@ -123,14 +123,11 @@ def main():
 
     version = "0.14.0"
     cfg = parse_config("config.txt")
-    present_mon = "PresentMon-1.6.0-x64.exe"
+    present_mon = "PresentMon-1.8.0-x64.exe" if sys.getwindowsversion().major >= 10 else "PresentMon-1.6.0-x64.exe"
     cpu_count = os.cpu_count()
     user32 = ctypes.windll.user32
     master_table = [[""]]
     videocontroller_hwids = [x.PnPDeviceID for x in wmi.WMI().Win32_VideoController()]
-
-    if sys.getwindowsversion().major >= 10:
-        present_mon = "PresentMon-1.8.0-x64.exe"
 
     if cpu_count is not None:
         cpu_count -= 1
