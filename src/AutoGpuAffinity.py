@@ -13,7 +13,6 @@ from tabulate import tabulate
 from calculation import compute_frametimes
 
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
-ntdll = ctypes.WinDLL("ntdll.dll")
 
 
 def parse_config(config_path):
@@ -97,16 +96,13 @@ def apply_affinity(hwids, action, dec_affinity=-1):
     subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
 
 
-def timer_resolution(enabled):
-    min_res = ctypes.c_ulong()
-    max_res = ctypes.c_ulong()
-    curr_res = ctypes.c_ulong()
+def timer_resolution(enabled: bool) -> int:
+    ntdll = ctypes.WinDLL("ntdll.dll")
+    min_res, max_res, curr_res = ctypes.c_ulong(), ctypes.c_ulong(), ctypes.c_ulong()
 
     ntdll.NtQueryTimerResolution(ctypes.byref(min_res), ctypes.byref(max_res), ctypes.byref(curr_res))
 
-    if max_res.value <= 10000 and ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res)) == 0:
-        return 0
-    return 1
+    return ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res))
 
 
 def str_to_list(str_array, array_type):
