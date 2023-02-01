@@ -57,9 +57,9 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution):
 
 
 def start_afterburner(path, profile):
-    subprocess.Popen([path, f"-Profile{profile}"])
-    time.sleep(7)
-    kill_processes("MSIAfterburner.exe")
+    with subprocess.Popen([path, f"/Profile{profile}", "/Q"]) as process:
+        time.sleep(5)
+        process.kill()
 
 
 def kill_processes(*targets):
