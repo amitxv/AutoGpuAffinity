@@ -1,15 +1,18 @@
-import sys
+import csv
 import ctypes
+import json
 import os
+import subprocess
+import sys
 import textwrap
 import time
-import subprocess
 import traceback
 import winreg
-import csv
-import json
+from typing import Dict, List
+
 import wmi
 from tabulate import tabulate
+
 from calculation import compute_frametimes
 
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
