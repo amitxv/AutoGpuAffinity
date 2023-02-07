@@ -18,8 +18,8 @@ from calculation import compute_frametimes
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 
 
-def parse_config(config_path):
-    config = {}
+def parse_config(config_path: str) -> Dict[str, str]:
+    config: Dict[str, str] = {}
     with open(config_path, "r", encoding="utf-8") as file:
         for line in file:
             if line.startswith("//"):
@@ -34,7 +34,7 @@ def parse_config(config_path):
     return config
 
 
-def create_lava_cfg(enable_fullscren, x_resolution, y_resolution):
+def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int) -> None:
     lava_triangle_folder = f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
     os.makedirs(lava_triangle_folder, exist_ok=True)
     lava_triangle_config = f"{lava_triangle_folder}\\window.json"
@@ -43,7 +43,7 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution):
         "default": {
             "decorated": True,
             "floating": False,
-            "fullscreen": bool(enable_fullscren),
+            "fullscreen": enable_fullscren,
             "height": y_resolution,
             "maximized": False,
             "monitor": 0,
@@ -58,24 +58,24 @@ def create_lava_cfg(enable_fullscren, x_resolution, y_resolution):
         json.dump(config_content, file, indent=4)
 
 
-def start_afterburner(path, profile):
+def start_afterburner(path: str, profile: int) -> None:
     with subprocess.Popen([path, f"/Profile{profile}", "/Q"]) as process:
         time.sleep(5)
         process.kill()
 
 
-def kill_processes(*targets):
+def kill_processes(*targets: str) -> None:
     for process in targets:
         subprocess.run(["taskkill", "/F", "/IM", process], **stdnull, check=False)
 
 
-def convert_affinity(cpu):
+def convert_affinity(cpu: int) -> int:
     affinity = 0
     affinity |= 1 << cpu
     return affinity
 
 
-def apply_affinity(hwids, action, dec_affinity=-1):
+def apply_affinity(hwids: List[str], action: int, dec_affinity: int = -1) -> None:
     for hwid in hwids:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{hwid}\\Device Parameters\\Interrupt Management\\Affinity Policy"
         if action == 1 and dec_affinity > -1:
@@ -108,13 +108,13 @@ def timer_resolution(enabled: bool) -> int:
     return ntdll.NtSetTimerResolution(10000, int(enabled), ctypes.byref(curr_res))
 
 
-def str_to_list(str_array, array_type):
+def str_to_list(str_array: str, array_type):
     str_array = [array_type(x) for x in str_array[1:-1].replace(" ", "").split(",") if x != ""]
     str_array = list(dict.fromkeys(str_array))  # remove duplicates
     return str_array
 
 
-def main():
+def main() -> None:
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("error: administrator privileges required")
         return
@@ -130,7 +130,7 @@ def main():
     cpu_count = os.cpu_count()
     user32 = ctypes.windll.user32
     master_table = [[""]]
-    videocontroller_hwids = [x.PnPDeviceID for x in wmi.WMI().Win32_VideoController()]
+    videocontroller_hwids: List[str] = [x.PnPDeviceID for x in wmi.WMI().Win32_VideoController()]
 
     if cpu_count is not None:
         cpu_count -= 1
@@ -155,7 +155,7 @@ def main():
         return
 
     if (int(cfg["cache_duration"]) < 0) or (int(cfg["duration"]) <= 0):
-        print("error: invalid durations in config")
+        print("error: invalid durations specified")
         return
 
     if int(cfg["dpcisr"]) and not os.path.exists(cfg["xperf_path"]):
@@ -206,7 +206,7 @@ def main():
     input("info: press enter to start benchmarking...")
 
     print("info: generating and preparing prerequisites")
-    create_lava_cfg(int(cfg["fullscreen"]), int(cfg["x_res"]), int(cfg["y_res"]))
+    create_lava_cfg(bool(int(cfg["fullscreen"])), int(cfg["x_res"]), int(cfg["y_res"]))
     os.mkdir(output_path)
     os.mkdir(f"{output_path}\\CSVs")
 
@@ -249,7 +249,7 @@ def main():
         time.sleep(5)
 
         if int(cfg["afterburner_profile"]) > 0:
-            start_afterburner(cfg["afterburner_path"], cfg["afterburner_profile"])
+            start_afterburner(cfg["afterburner_path"], int(cfg["afterburner_profile"]))
 
         affinity_args = []
         if int(cfg["sync_liblava_affinity"]):
@@ -332,7 +332,7 @@ def main():
 
         print(f"info: parsing data for CPU {cpu}")
 
-        frametimes = []
+        frametimes: List[float] = []
         with open(f"{output_path}\\CSVs\\CPU-{cpu}.csv", "r", encoding="utf-8") as file:
             for row in csv.DictReader(file):
                 if (milliseconds := row.get("MsBetweenPresents")) is not None:
