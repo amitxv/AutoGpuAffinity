@@ -124,7 +124,7 @@ def main() -> None:
     elif __file__:
         os.chdir(os.path.dirname(__file__))
 
-    version = "0.14.0"
+    version = "0.14.1"
     cfg = parse_config("config.txt")
     present_mon = "PresentMon-1.8.0-x64.exe" if sys.getwindowsversion().major >= 10 else "PresentMon-1.6.0-x64.exe"
     cpu_count = os.cpu_count()
