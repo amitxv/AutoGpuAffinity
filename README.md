@@ -22,7 +22,7 @@ I am not responsible for damage caused to computer. There is a risk of your GPU 
 
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases)
 
-- Run **start.bat** and press enter when ready
+- Run **AutoGpuAffinity** through the command-line and press enter when ready to start benchmarking
 
 - After the tool has benchmarked each core, the GPU affinity will be reset to the Windows default and a table will be displayed with the results. The xperf report is located in the session directory
 
