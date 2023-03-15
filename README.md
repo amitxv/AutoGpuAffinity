@@ -2,8 +2,6 @@
 
 <img src="./img/example-output.png" width="1000">
 
-Single-core GPU driver affinity benchmarking
-
 I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests.
 
 ## Usage
