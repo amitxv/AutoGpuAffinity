@@ -4,6 +4,8 @@
 
 I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests.
 
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/amitxv)
+
 ## Usage
 
 - Windows ADK must be installed for DPC/ISR logging with xperf (this is entirely optional)
