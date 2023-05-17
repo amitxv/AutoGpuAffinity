@@ -222,7 +222,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
 
 def main() -> None:
-    version = "0.15.0"
+    version = "0.15.1"
 
     print(f"AutoGpuAffinity v{version}")
     print("GitHub - https://github.com/amitxv\n")
@@ -240,6 +240,11 @@ def main() -> None:
         return
 
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"AutoGpuAffinity v{version}",
+    )
     parser.add_argument(
         "--config",
         metavar="<config>",
