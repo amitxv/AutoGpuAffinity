@@ -218,9 +218,11 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             print(f"{metric_value:<{right_padding}}", end="")
         print()
 
+    print()
+
 
 def main() -> None:
-    version = "0.14.1"
+    version = "0.15.0"
 
     print(f"AutoGpuAffinity v{version}")
     print("GitHub - https://github.com/amitxv\n")
@@ -368,7 +370,7 @@ def main() -> None:
         apply_affinity(gpu_hwids, cpu)
         time.sleep(5)
 
-        if profile := config.getboolean("MSI Afterburner", "profile") > 0:
+        if (profile := config.getint("MSI Afterburner", "profile")) > 0:
             start_afterburner(config.get("MSI Afterburner", "location"), profile)
 
         affinity_args: List[str] = []
