@@ -244,7 +244,7 @@ def main() -> None:
         "--config",
         metavar="<config>",
         type=str,
-        help="path to lists config file",
+        help="path to config file",
     )
     parser.add_argument(
         "--analyze",
