@@ -185,7 +185,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             # :.2f is for .00 numerical formatting
             new_value = f"{abs(metric_value):.2f}"
             # apply color if match is found
-            _results[metric] = f"{green}{new_value}{default}" if metric_value == best_value else new_value
+            _results[metric] = f"{green}{new_value}*{default}" if metric_value == best_value else new_value
 
     os.system("<nul set /p=\x1B[8;50;1000t")
 
