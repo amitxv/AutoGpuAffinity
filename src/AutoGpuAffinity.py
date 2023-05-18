@@ -223,7 +223,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
 
 def main() -> None:
-    version = "0.15.1"
+    version = "0.15.2"
 
     print(f"AutoGpuAffinity v{version}")
     print("GitHub - https://github.com/amitxv\n")
