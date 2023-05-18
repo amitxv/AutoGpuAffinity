@@ -383,7 +383,7 @@ def main() -> None:
             affinity_args.extend(["/affinity", str(convert_affinity(cpu))])
 
         subprocess.run(
-            ["start", *affinity_args, f"{program_path}\\bin\\liblava\\lava-triangle.exe"],
+            ["start", "", *affinity_args, rf"{program_path}\bin\liblava\lava-triangle.exe"],
             shell=True,
             check=False,
         )
