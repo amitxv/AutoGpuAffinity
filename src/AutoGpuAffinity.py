@@ -18,6 +18,7 @@ from typing import Dict, List, Union
 import wmi
 
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
 
 
 def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int) -> None:
@@ -77,7 +78,7 @@ def apply_affinity(hwids: List[str], cpu: int = -1, apply: bool = True) -> None:
             except FileNotFoundError:
                 pass
 
-    subprocess.run(["bin\\restart64\\restart64.exe", "/q"], check=False)
+    subprocess.run([f"{program_path}\\bin\\restart64\\restart64.exe", "/q"], check=False)
 
 
 def start_afterburner(path: str, profile: int) -> None:
@@ -279,9 +280,8 @@ def main() -> None:
         print(f"info: set gpu driver affinity to: CPU {requested_affinity}")
         return
 
-    program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
     presentmon = f"PresentMon-{'1.8.0' if sys.getwindowsversion().major >= 10 else '1.6.0'}-x64.exe"
-    config_path = args.config if args.config is not None else "config.ini"
+    config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
     user32 = ctypes.windll.user32
 
     # delimiters=("=") is required for file path errors with colons
