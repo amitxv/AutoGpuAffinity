@@ -2,7 +2,7 @@
 
 <img src="./img/example-output.png" width="1000">
 
-I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests.
+I am not responsible for damage caused to computer. There is a risk of your GPU driver not responding after restarting it during the tests. A possible fix for this is to set the PCIe link speed to the maximum supported in BIOS ([#14](https://github.com/amitxv/AutoGpuAffinity/issues/14)).
 
 [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/amitxv)
 
