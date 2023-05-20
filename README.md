@@ -33,7 +33,7 @@ optional arguments:
 
     - Save the desired settings to a profile (e.g. profile 1)
 
-    - Configure the path along with the profile to load in **config.txt**
+    - Configure the path along with the profile to load in ``config.ini``
 
 - Download and extract the latest release from the [releases tab](https://github.com/amitxv/AutoGpuAffinity/releases)
 
