@@ -222,7 +222,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     print()
 
 
-def main() -> None:
+def main() -> int:
     version = "0.15.3"
 
     print(f"AutoGpuAffinity v{version}")
@@ -230,7 +230,7 @@ def main() -> None:
 
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("error: administrator privileges required")
-        return
+        return 1
 
     gpu_hwids: List[str] = [gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()]
 
@@ -238,7 +238,7 @@ def main() -> None:
         cpu_count -= 1  # os.cpu_count() returns core count not last CPU index
     else:
         print("error: unable to get CPU count")
-        return
+        return 1
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -268,17 +268,17 @@ def main() -> None:
 
     if args.analyze:
         display_results(args.analyze, sys.getwindowsversion().major >= 10)
-        return
+        return 0
 
     if args.apply_affinity:
         requested_affinity = int(args.apply_affinity)
         if not 0 <= requested_affinity <= cpu_count:
             print("error: invalid affinity")
-            return
+            return 1
 
         apply_affinity(gpu_hwids, requested_affinity)
         print(f"info: set gpu driver affinity to: CPU {requested_affinity}")
-        return
+        return 0
 
     presentmon = f"PresentMon-{'1.8.0' if sys.getwindowsversion().major >= 10 else '1.6.0'}-x64.exe"
     config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
@@ -290,25 +290,25 @@ def main() -> None:
 
     if not gpu_hwids:
         print("error: no graphics card found")
-        return
+        return 1
 
     if not os.path.exists(config_path):
         print("error: config file not found")
-        return
+        return 1
 
     if config.getint("settings", "cache_duration") < 0 or config.getint("settings", "benchmark_duration") <= 0:
         print("error: invalid durations specified")
-        return
+        return 1
 
     if config.getboolean("xperf", "enabled") and not os.path.exists(config.get("xperf", "location")):
         print("error: invalid xperf path specified")
-        return
+        return 1
 
     if config.getint("MSI Afterburner", "profile") > 0 and not os.path.exists(
         config.get("MSI Afterburner", "location")
     ):
         print("error: invalid MSI Afterburner path specified")
-        return
+        return 1
 
     # can't update config with list, must be a string
     custom_cpus = json.loads(config.get("settings", "custom_cpus"))
@@ -319,7 +319,7 @@ def main() -> None:
 
         if not all(0 <= cpu <= cpu_count for cpu in benchmark_cpus):
             print("error: invalid cpus in custom_cpus array")
-            return
+            return 1
     else:
         benchmark_cpus = list(range(cpu_count + 1))
 
@@ -415,7 +415,7 @@ def main() -> None:
             print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
             shutil.rmtree(session_directory)
             apply_affinity(gpu_hwids, apply=False)
-            return
+            return 1
 
         if config.getboolean("xperf", "enabled"):
             subprocess.run(
@@ -441,7 +441,7 @@ def main() -> None:
                     print("error: unable to generate dpcisr report")
                     shutil.rmtree(session_directory)
                     apply_affinity(gpu_hwids, apply=False)
-                    return
+                    return 1
 
             if not config.getboolean("xperf", "save_etls"):
                 os.remove(f"{session_directory}\\xperf\\CPU-{cpu}.etl")
@@ -457,14 +457,18 @@ def main() -> None:
     print()
     display_results(f"{session_directory}\\CSVs", sys.getwindowsversion().major >= 10)
 
+    return 0
+
 
 if __name__ == "__main__":
+    __exit_code__ = 0
     try:
-        main()
+        __exit_code__ = main()
     except KeyboardInterrupt:
-        sys.exit()
+        sys.exit(1)
     except Exception:
         print(traceback.format_exc())
+        __exit_code__ = 1
     finally:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         process_array = (ctypes.c_uint * 1)()
@@ -472,3 +476,5 @@ if __name__ == "__main__":
         # only pause if script was ran by double-clicking
         if num_processes < 3:
             input("info: press enter to exit")
+
+        sys.exit(__exit_code__)
