@@ -123,9 +123,10 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
         green = ""
         default = ""
 
-    for csv_file in os.listdir(csv_directory):
-        file_name, _ = os.path.splitext(csv_file)
-        cpu = file_name.lstrip("CPU-")
+    cpus = sorted([int(file.strip("CPU-.csv")) for file in os.listdir(csv_directory)])
+
+    for cpu in cpus:
+        csv_file = f"CPU-{cpu}.csv"
 
         frametimes: List[float] = []
 
