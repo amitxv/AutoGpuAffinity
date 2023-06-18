@@ -3,7 +3,6 @@ import csv
 import ctypes
 import datetime
 import json
-import math
 import os
 import shutil
 import subprocess
@@ -13,9 +12,11 @@ import time
 import traceback
 import winreg
 from configparser import ConfigParser
-from typing import Dict, List, Union
+from typing import Dict, List
 
 import wmi
+
+from computeframetimes import Fps
 
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
@@ -87,31 +88,6 @@ def start_afterburner(path: str, profile: int) -> None:
         process.kill()
 
 
-def compute_frametimes(
-    frametimes: List[float],
-    frametime_cache: Dict[str, Union[float, int]],
-    metric: str,
-    value: Union[None, float] = None,
-) -> float:
-    result: float = 0
-
-    if metric == "percentile" and value is not None:
-        result = frametimes[math.ceil(value / 100 * frametime_cache["len"]) - 1]
-    elif metric == "lows" and value is not None:
-        current_total = 0
-        for present in frametimes:
-            current_total += present
-            if current_total >= value / 100 * frametime_cache["sum"]:
-                result = present
-                break
-    elif metric == "stdev":
-        dev = [x - frametime_cache["average"] for x in frametimes]
-        dev2 = [x * x for x in dev]
-        result = math.sqrt(sum(dev2) / frametime_cache["len"])
-
-    return result
-
-
 def display_results(csv_directory: str, enable_color: bool) -> None:
     results: Dict[str, Dict[str, float]] = {}
 
@@ -138,29 +114,20 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
                 if (ms_between_presents := row.get("msbetweenpresents")) is not None:
                     frametimes.append(float(ms_between_presents))
 
-        frametimes.sort(reverse=True)
-
-        total = sum(frametimes)
-        length = len(frametimes)
-        average = total / length
-
-        # cache values that are used several times in compute_frametimes function
-        frametime_cache = {"sum": total, "len": length, "average": average}
-
-        percentile_lows = {
-            f"{metric}{value}": round(1000 / compute_frametimes(frametimes, frametime_cache, metric, value), 2)
-            for metric in ("percentile", "lows")
-            for value in (1, 0.1, 0.01, 0.005)
-        }
+        fps = Fps(frametimes)
 
         # results of current CPU in results dict
         results[cpu] = {
-            "maximum": round(1000 / frametimes[-1], 2),
-            "average": round(1000 / average, 2),
-            "minimum": round(1000 / frametimes[0], 2),
+            "maximum": round(fps.maximum(), 2),
+            "average": round(fps.average(), 2),
+            "minimum": round(fps.minimum(), 2),
             # negate positive value so that highest negative value will be the lowest absolute value
-            "stdev": round(-compute_frametimes(frametimes, frametime_cache, "stdev") * 100000, 2),
-            **percentile_lows,
+            "stdev": round(-fps.stdev(), 2),
+            **{
+                f"{metric}{value}": round(getattr(fps, metric)(value), 2)
+                for metric in ("percentile", "lows")
+                for value in (1, 0.1, 0.01, 0.005)
+            },
         }
 
     # analyze best values for each metric
