@@ -4,7 +4,6 @@ from typing import List
 
 class Fps:
     def __init__(self, frametimes: List[float]) -> None:
-        self.raw_framerates = [1000 / frametime for frametime in frametimes]
         self.sorted_frametimes = sorted(frametimes, reverse=True)
 
         # cache values
@@ -25,14 +24,14 @@ class Fps:
         return 1000 / self.sorted_frametimes[math.ceil(value / 100 * self.length) - 1]
 
     def stdev(self) -> float:
-        squared_deviations = sum((framerate - self.mean) ** 2 for framerate in self.raw_framerates)
+        squared_deviations = sum((1000 / framerate - self.mean) ** 2 for framerate in self.sorted_frametimes)
         return math.sqrt(squared_deviations / (self.length - 1))  # bessel's correction
 
     def maximum(self) -> float:
-        return max(self.raw_framerates)
+        return 1000 / min(self.sorted_frametimes)
 
     def minimum(self) -> float:
-        return min(self.raw_framerates)
+        return 1000 / max(self.sorted_frametimes)
 
     def average(self) -> float:
         return self.mean
