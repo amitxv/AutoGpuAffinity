@@ -28,10 +28,10 @@ class Fps:
         return math.sqrt(squared_deviations / (self.length - 1))  # bessel's correction
 
     def maximum(self) -> float:
-        return 1000 / min(self.sorted_frametimes)
+        return 1000 / self.sorted_frametimes[-1]
 
     def minimum(self) -> float:
-        return 1000 / max(self.sorted_frametimes)
+        return 1000 / self.sorted_frametimes[0]
 
     def average(self) -> float:
         return self.mean
