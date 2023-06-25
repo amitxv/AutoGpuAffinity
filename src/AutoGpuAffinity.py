@@ -51,17 +51,11 @@ def kill_processes(*targets: str) -> None:
         subprocess.run(["taskkill", "/F", "/IM", process], **stdnull, check=False)
 
 
-def convert_affinity(cpu: int) -> int:
-    affinity = 0
-    affinity |= 1 << cpu
-    return affinity
-
-
 def apply_affinity(hwids: List[str], cpu: int = -1, apply: bool = True) -> None:
     for hwid in hwids:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{hwid}\\Device Parameters\\Interrupt Management\\Affinity Policy"
         if apply and cpu > -1:
-            decimal_affinity = convert_affinity(cpu)
+            decimal_affinity = 1 << cpu
             bin_affinity = bin(decimal_affinity).lstrip("0b")
             le_hex = int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00")
 
@@ -348,7 +342,7 @@ def main() -> int:
 
         affinity_args: List[str] = []
         if config.getboolean("liblava", "sync_liblava_affinity"):
-            affinity_args.extend(["/affinity", str(convert_affinity(cpu))])
+            affinity_args.extend(["/affinity", str(1 << cpu)])
 
         subprocess.run(
             ["start", "", *affinity_args, rf"{program_path}\bin\liblava\lava-triangle.exe"],
