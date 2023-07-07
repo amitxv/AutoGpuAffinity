@@ -15,7 +15,6 @@ from configparser import ConfigParser
 from typing import Dict, List
 
 import wmi
-
 from computeframetimes import Fps
 
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
@@ -344,7 +343,7 @@ def main() -> int:
             affinity_args.extend(["/affinity", str(1 << cpu)])
 
         subprocess.run(
-            ["start", "", *affinity_args, rf"{program_path}\bin\liblava\lava-triangle.exe"],
+            ["start", "", *affinity_args, f"{program_path}\\bin\\liblava\\lava-triangle.exe"],
             shell=True,
             check=False,
         )
