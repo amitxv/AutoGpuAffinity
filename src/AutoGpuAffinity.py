@@ -59,8 +59,8 @@ def apply_affinity(hwids: List[str], cpu: int = -1, apply: bool = True) -> None:
             le_hex = int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00")
 
             with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, policy_path) as key:
-                winreg.SetValueEx(key, "DevicePolicy", 0, 4, 4)
-                winreg.SetValueEx(key, "AssignmentSetOverride", 0, 3, le_hex)
+                winreg.SetValueEx(key, "DevicePolicy", 0, winreg.REG_DWORD, 4)
+                winreg.SetValueEx(key, "AssignmentSetOverride", 0, winreg.REG_BINARY, le_hex)
 
         else:
             try:
