@@ -319,18 +319,19 @@ def main() -> int:
         DPC/ISR Logging          {config.getboolean("xperf", "enabled")}
         Save ETLs                {config.getboolean("xperf", "save_etls")}
         Window Mode              {f"Fullscreen ({user32.GetSystemMetrics(0)}x{user32.GetSystemMetrics(1)})" if config.getboolean("liblava", "fullscreen") else f"Windowed ({config.get('liblava', 'x_resolution')}x{config.get('liblava', 'y_resolution')})"}
-        Sync Affinity            {config.getboolean("liblava", "sync_liblava_affinity")}
+        Sync Affinity            {config.getboolean("settings", "sync_driver_affinity")}
         """
         )
     )
 
     input("info: press enter to start benchmarking...")
 
-    create_lava_cfg(
-        config.getboolean("liblava", "fullscreen"),
-        config.getint("liblava", "x_resolution"),
-        config.getint("liblava", "y_resolution"),
-    )
+    if config.getint("settings", "subject") == 1:
+        create_lava_cfg(
+            config.getboolean("liblava", "fullscreen"),
+            config.getint("liblava", "x_resolution"),
+            config.getint("liblava", "y_resolution"),
+        )
 
     # this will create all of the required folders
     os.makedirs(f"{session_directory}\\CSVs", exist_ok=True)
@@ -352,7 +353,7 @@ def main() -> int:
             start_afterburner(config.get("MSI Afterburner", "location"), profile)
 
         affinity_args: List[str] = []
-        if config.getboolean("liblava", "sync_liblava_affinity"):
+        if config.getboolean("settings", "sync_driver_affinity"):
             affinity_args.extend(["/affinity", str(1 << cpu)])
 
         subprocess.run(
@@ -361,7 +362,7 @@ def main() -> int:
             check=False,
         )
 
-        # 5s offset to allow liblava to launch
+        # 5s offset to allow subject to launch
         time.sleep(5 + config.getint("settings", "cache_duration"))
 
         if config.getboolean("xperf", "enabled"):
