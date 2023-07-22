@@ -227,8 +227,10 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    windows_version_info = sys.getwindowsversion()
+
     if args.analyze:
-        display_results(args.analyze, sys.getwindowsversion().major >= 10)
+        display_results(args.analyze, windows_version_info.major >= 10)
         return 0
 
     if args.apply_affinity:
@@ -240,8 +242,9 @@ def main() -> int:
         apply_affinity(gpu_hwids, requested_affinity)
         print(f"info: set gpu driver affinity to: CPU {requested_affinity}")
         return 0
+    # use 1.6.0 on Windows Server
+    presentmon = f"PresentMon-{'1.8.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
 
-    presentmon = f"PresentMon-{'1.8.0' if sys.getwindowsversion().major >= 10 else '1.6.0'}-x64.exe"
     config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
     user32 = ctypes.windll.user32
 
@@ -429,7 +432,7 @@ def main() -> int:
         os.remove("C:\\kernel.etl")
 
     print()
-    display_results(f"{session_directory}\\CSVs", sys.getwindowsversion().major >= 10)
+    display_results(f"{session_directory}\\CSVs", windows_version_info.major >= 10)
 
     return 0
 
