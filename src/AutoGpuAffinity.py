@@ -15,6 +15,7 @@ from configparser import ConfigParser
 from typing import Dict, List
 
 import wmi
+
 from computeframetimes import Fps
 
 stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
@@ -244,6 +245,11 @@ def main() -> int:
     config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
     user32 = ctypes.windll.user32
 
+    subject_paths: Dict[int, str] = {
+        1: f"{program_path}\\bin\\liblava\\lava-triangle.exe",
+        2: f"{program_path}\\bin\\Benchmark.DirectX9.Black.White.exe",
+    }
+
     # delimiters=("=") is required for file path errors with colons
     config = ConfigParser(delimiters="=")
     config.read(config_path)
@@ -269,6 +275,12 @@ def main() -> int:
     ):
         print("error: invalid MSI Afterburner path specified")
         return 1
+
+    if (subject_path := subject_paths.get(config.getint("settings", "subject"))) is None:
+        print("error: invalid subject specified")
+        return 1
+
+    subject_fname = os.path.basename(subject_path)
 
     # can't update config with list, must be a string
     custom_cpus = json.loads(config.get("settings", "custom_cpus"))
@@ -300,6 +312,7 @@ def main() -> int:
         Cache Duration           {config.get("settings", "cache_duration")}
         Benchmark Duration       {config.get("settings", "benchmark_duration")}
         Benchmark CPUs           {"All" if not custom_cpus else ','.join([str(cpu) for cpu in benchmark_cpus])}
+        Subject                  {os.path.splitext(subject_fname)[0]}
         Estimated Time           {estimated_time}
         Estimated End Time       {finish_time.strftime('%H:%M:%S')}
         Load Afterburner         {config.getint("MSI Afterburner", "profile") > 0}
@@ -327,7 +340,7 @@ def main() -> int:
         os.mkdir(f"{session_directory}\\xperf")
         subprocess.run([config.get("xperf", "location"), "-stop"], **stdnull, check=False)
 
-    kill_processes("xperf.exe", "lava-triangle.exe", presentmon)
+    kill_processes("xperf.exe", subject_fname, presentmon)
 
     for cpu in benchmark_cpus:
         print(f"info: benchmarking CPU {cpu}")
@@ -343,7 +356,7 @@ def main() -> int:
             affinity_args.extend(["/affinity", str(1 << cpu)])
 
         subprocess.run(
-            ["start", "", *affinity_args, f"{program_path}\\bin\\liblava\\lava-triangle.exe"],
+            ["start", "", *affinity_args, subject_path],
             shell=True,
             check=False,
         )
@@ -362,7 +375,7 @@ def main() -> int:
                 "-timed",
                 config.get("settings", "benchmark_duration"),
                 "-process_name",
-                "lava-triangle.exe",
+                subject_fname,
                 "-output_file",
                 f"{session_directory}\\CSVs\\CPU-{cpu}.csv",
                 "-terminate_after_timed",
@@ -406,7 +419,7 @@ def main() -> int:
             if not config.getboolean("xperf", "save_etls"):
                 os.remove(f"{session_directory}\\xperf\\CPU-{cpu}.etl")
 
-        kill_processes("xperf.exe", "lava-triangle.exe", presentmon)
+        kill_processes("xperf.exe", subject_fname, presentmon)
 
     # cleanup
     apply_affinity(gpu_hwids, apply=False)
