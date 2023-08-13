@@ -12,7 +12,7 @@ import time
 import traceback
 import winreg
 from configparser import ConfigParser
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple, Union
 
 import wmi
 
@@ -49,6 +49,14 @@ def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int
 def kill_processes(*targets: str) -> None:
     for process in targets:
         subprocess.run(["taskkill", "/F", "/IM", process], **stdnull, check=False)
+
+
+def read_value(path: str, value_name: str) -> Union[Tuple[Any, int], None]:
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
+            return winreg.QueryValueEx(key, value_name)[0]
+    except FileNotFoundError:
+        return None
 
 
 def apply_affinity(hwids: List[str], cpu: int = -1, apply: bool = True) -> None:
@@ -232,6 +240,12 @@ def main() -> int:
     if args.analyze:
         display_results(args.analyze, windows_version_info.major >= 10)
         return 0
+
+    basicdisplay_start = read_value("SYSTEM\\CurrentControlSet\\Services\\BasicDisplay", "Start")
+
+    if basicdisplay_start == 4:
+        print("error: please enable the BasicDisplay driver to prevent issues with restarting the GPU driver")
+        return 1
 
     if args.apply_affinity:
         requested_affinity = int(args.apply_affinity)
