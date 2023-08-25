@@ -257,7 +257,7 @@ def main() -> int:
         print(f"info: set gpu driver affinity to: CPU {requested_affinity}")
         return 0
     # use 1.6.0 on Windows Server
-    presentmon = f"PresentMon-{'1.8.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
+    presentmon = f"PresentMon-{'1.9.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
 
     config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
     user32 = ctypes.windll.user32
