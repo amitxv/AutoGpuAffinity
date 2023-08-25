@@ -23,7 +23,7 @@ program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) 
 
 
 def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int) -> None:
-    lava_triangle_folder = f"{os.environ['USERPROFILE']}\\AppData\\Roaming\\liblava\\lava triangle"
+    lava_triangle_folder = f"{os.environ['APPDATA']}\\liblava\\lava triangle"
     os.makedirs(lava_triangle_folder, exist_ok=True)
     lava_triangle_config = f"{lava_triangle_folder}\\window.json"
 
