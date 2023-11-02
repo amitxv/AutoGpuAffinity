@@ -23,7 +23,7 @@ optional arguments:
                         assign a single core affinity to graphics drivers
 ```
 
-- Windows ADK must be installed for DPC/ISR logging with xperf (this is entirely optional)
+- Windows Performance Toolkit from the Windows ADK must be installed for DPC/ISR logging with xperf (this is entirely optional)
 
     - [ADK for Windows 8.1+](https://docs.microsoft.com/en-us/windows-hardware/get-started/adk-install)
 
