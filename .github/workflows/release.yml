@@ -33,7 +33,7 @@ jobs:
           move "src\bin" AutoGpuAffinity
           move "src\config.ini" AutoGpuAffinity
 
-      - name: Zip AutoGpuAffinity
+      - name: Zip release
         run: Compress-Archive -Path AutoGpuAffinity -DestinationPath AutoGpuAffinity.zip
 
       - name: Upload to release
