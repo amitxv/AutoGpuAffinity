@@ -341,7 +341,8 @@ def main() -> int:
         )
     )
 
-    input("info: press enter to start benchmarking...")
+    if not config.getboolean("settings", "skip_confirmation"):
+        input("info: press enter to start benchmarking...")
 
     if config.getint("settings", "subject") == 1:
         create_lava_cfg(
