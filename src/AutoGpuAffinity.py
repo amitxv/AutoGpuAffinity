@@ -372,7 +372,7 @@ def main() -> int:
 
         affinity_args: List[str] = []
         if config.getboolean("settings", "sync_driver_affinity"):
-            affinity_args.extend(["/affinity", str(1 << cpu)])
+            affinity_args.extend(["/affinity", hex(1 << cpu)])
 
         subprocess.run(
             ["start", "", *affinity_args, subject_path],
