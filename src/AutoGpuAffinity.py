@@ -193,7 +193,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
 
 def main() -> int:
-    version = "0.15.9"
+    version = "0.15.10"
 
     print(f"AutoGpuAffinity Version {version} - GPLv3\nGitHub - https://github.com/amitxv\n")
 
