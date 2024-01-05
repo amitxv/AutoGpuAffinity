@@ -195,7 +195,9 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 def main() -> int:
     version = "0.15.10"
 
-    print(f"AutoGpuAffinity Version {version} - GPLv3\nGitHub - https://github.com/amitxv\n")
+    print(
+        f"AutoGpuAffinity Version {version} - GPLv3\nGitHub - https://github.com/amitxv\nDonate - https://www.buymeacoffee.com/amitxv\n"
+    )
 
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("error: administrator privileges required")
