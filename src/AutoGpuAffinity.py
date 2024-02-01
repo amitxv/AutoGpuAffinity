@@ -95,10 +95,12 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
     if enable_color:
         green = "\x1b[92m"
+        yellow = "\x1b[93m"
         default = "\x1b[0m"
         os.system("color")
     else:
         green = ""
+        yellow = ""
         default = ""
 
     cpus = sorted([int(file.strip("CPU-.csv")) for file in os.listdir(csv_directory)])
@@ -143,10 +145,12 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     ):
         first_key = next(iter(results))  # gets first key name, usually "0" for CPU 0
         best_value = results[first_key][metric]  # base value
+        second_best_value = best_value
 
         for _, _results in results.items():
             metric_value = _results[metric]
             if metric_value > best_value:
+                second_best_value = best_value
                 best_value = metric_value
 
         # iterate over all values again and find matches
@@ -156,7 +160,13 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             # :.2f is for .00 numerical formatting
             new_value = f"{abs(metric_value):.2f}"
             # apply color if match is found
-            _results[metric] = f"{green}*{new_value}{default}" if metric_value == best_value else new_value
+
+            if metric_value == best_value:
+                _results[metric] = f"{green}*{new_value}{default}"
+            elif metric_value == second_best_value:
+                _results[metric] = f"{yellow}*{new_value}{default}"
+            else:
+                _results[metric] = new_value
 
     os.system("<nul set /p=\x1B[8;50;1000t")
 
