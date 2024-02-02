@@ -85,7 +85,7 @@ def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
         if apply and cpu > -1:
             decimal_affinity = 1 << cpu
             bin_affinity = bin(decimal_affinity).lstrip("0b")
-            le_hex = str(int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00"))
+            le_hex = int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00")
 
             with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, policy_path) as key:
                 winreg.SetValueEx(key, "DevicePolicy", 0, winreg.REG_DWORD, 4)
