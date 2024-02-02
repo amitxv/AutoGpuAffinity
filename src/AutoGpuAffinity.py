@@ -123,6 +123,40 @@ def start_afterburner(path: str, profile: int) -> None:
         process.kill()
 
 
+def print_table(formatted_results: dict[str, dict[str, str]]):
+    # print table headings
+    print(f"{'CPU':<5}", end="")
+
+    for metric in (
+        "Max",
+        "Avg",
+        "Min",
+        "STDEV",
+        "1 %ile",
+        "0.1 %ile",
+        "0.01 %ile",
+        "0.005 %ile",
+        "1% Low",
+        "0.1% Low",
+        "0.01% Low",
+        "0.005% Low",
+    ):
+        print(f"{metric:<13}", end="")
+
+    print()  # new line
+
+    # print values for each heading
+    for _cpu, _results in formatted_results.items():
+        print(f"{_cpu:<5}", end="")
+        for metric_value in _results.values():
+            # padding needs to be larger to compensate for color chars
+            right_padding = 22 if "[" in metric_value else 13
+            print(f"{metric_value:<{right_padding}}", end="")
+        print()  # new line
+
+    print()  # new line
+
+
 def display_results(csv_directory: str, enable_color: bool) -> None:
     """Display a table of the benchmark results."""
     results: dict[str, dict[str, float]] = {}
@@ -217,36 +251,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
     os.system("<nul set /p=\x1B[8;50;1000t")
 
-    # print values to table
-    print(f"{'CPU':<5}", end="")
-
-    for metric in (
-        "Max",
-        "Avg",
-        "Min",
-        "STDEV",
-        "1 %ile",
-        "0.1 %ile",
-        "0.01 %ile",
-        "0.005 %ile",
-        "1% Low",
-        "0.1% Low",
-        "0.01% Low",
-        "0.005% Low",
-    ):
-        print(f"{metric:<13}", end="")
-
-    print()
-
-    for _cpu, _results in formatted_results.items():
-        print(f"{_cpu:<5}", end="")
-        for metric_value in _results.values():
-            ## padding needs to be larger to compensate for color chars
-            right_padding = 22 if "[" in metric_value else 13
-            print(f"{metric_value:<{right_padding}}", end="")
-        print()
-
-    print()
+    print_table(formatted_results)
 
 
 def main() -> int:  # noqa: PLR0911, C901, PLR0912, D103, PLR0915
