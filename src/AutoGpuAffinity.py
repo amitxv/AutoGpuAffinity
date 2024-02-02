@@ -12,17 +12,24 @@ import time
 import traceback
 import winreg
 from configparser import ConfigParser
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 import wmi
-
 from computeframetimes import Fps
 
-stdnull = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
-program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
+program_path = (
+    os.path.dirname(sys.executable)
+    if getattr(sys, "frozen", False)
+    else os.path.dirname(__file__)
+)
 
 
-def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int) -> None:
+def create_lava_cfg(
+    enable_fullscren: bool,
+    x_resolution: int,
+    y_resolution: int,
+) -> None:
+    """Create liblava configuration file."""
     lava_triangle_folder = f"{os.environ['APPDATA']}\\liblava\\lava triangle"
     os.makedirs(lava_triangle_folder, exist_ok=True)
     lava_triangle_config = f"{lava_triangle_folder}\\window.json"
@@ -39,7 +46,7 @@ def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int
             "width": x_resolution,
             "x": 0,
             "y": 0,
-        }
+        },
     }
 
     with open(lava_triangle_config, "w", encoding="utf-8") as file:
@@ -47,51 +54,78 @@ def create_lava_cfg(enable_fullscren: bool, x_resolution: int, y_resolution: int
 
 
 def kill_processes(*targets: str) -> None:
+    """Kill processes."""
     for process in targets:
-        subprocess.run(["taskkill", "/F", "/IM", process], **stdnull, check=False)
+        subprocess.run(
+            ["taskkill", "/F", "/IM", process],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
 
 
-def read_value(path: str, value_name: str) -> Union[Tuple[Any, int], None]:
+def read_value(path: str, value_name: str) -> Any | None:
+    """Read key values from Windows registry."""
     try:
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            path,
+            0,
+            winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
+        ) as key:
             return winreg.QueryValueEx(key, value_name)[0]
     except FileNotFoundError:
         return None
 
 
-def apply_affinity(hwids: List[str], cpu: int = -1, apply: bool = True) -> None:
+def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
+    """Apply affinity policies to specified device hwids."""
     for hwid in hwids:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{hwid}\\Device Parameters\\Interrupt Management\\Affinity Policy"
         if apply and cpu > -1:
             decimal_affinity = 1 << cpu
             bin_affinity = bin(decimal_affinity).lstrip("0b")
-            le_hex = int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00")
+            le_hex = str(int(bin_affinity, 2).to_bytes(8, "little").rstrip(b"\x00"))
 
             with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, policy_path) as key:
                 winreg.SetValueEx(key, "DevicePolicy", 0, winreg.REG_DWORD, 4)
-                winreg.SetValueEx(key, "AssignmentSetOverride", 0, winreg.REG_BINARY, le_hex)
+                winreg.SetValueEx(
+                    key,
+                    "AssignmentSetOverride",
+                    0,
+                    winreg.REG_BINARY,
+                    le_hex,
+                )
 
         else:
             try:
                 with winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE, policy_path, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY
+                    winreg.HKEY_LOCAL_MACHINE,
+                    policy_path,
+                    0,
+                    winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
                 ) as key:
                     winreg.DeleteValue(key, "DevicePolicy")
                     winreg.DeleteValue(key, "AssignmentSetOverride")
             except FileNotFoundError:
                 pass
 
-    subprocess.run([f"{program_path}\\bin\\restart64\\restart64.exe", "/q"], check=False)
+    subprocess.run(
+        [f"{program_path}\\bin\\restart64\\restart64.exe", "/q"],
+        check=False,
+    )
 
 
 def start_afterburner(path: str, profile: int) -> None:
+    """Start MSI Afterburner with a specified profile."""
     with subprocess.Popen([path, f"/Profile{profile}", "/Q"]) as process:
         time.sleep(5)
         process.kill()
 
 
 def display_results(csv_directory: str, enable_color: bool) -> None:
-    results: Dict[str, Dict[str, float]] = {}
+    """Display a table of the benchmark results."""
+    results: dict[str, dict[str, float]] = {}
 
     if enable_color:
         green = "\x1b[92m"
@@ -108,20 +142,22 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     for cpu in cpus:
         csv_file = f"CPU-{cpu}.csv"
 
-        frametimes: List[float] = []
+        frametimes: list[float] = []
 
-        with open(f"{csv_directory}\\{csv_file}", "r", encoding="utf-8") as file:
+        with open(f"{csv_directory}\\{csv_file}", encoding="utf-8") as file:
             for row in csv.DictReader(file):
                 # convert key names to lowercase because column names changed in a newer version of PresentMon
-                row = {key.lower(): value for key, value in row.items()}
+                row_lower = {key.lower(): value for key, value in row.items()}
 
-                if (ms_between_presents := row.get("msbetweenpresents")) is not None:
+                if (
+                    ms_between_presents := row_lower.get("msbetweenpresents")
+                ) is not None:
                     frametimes.append(float(ms_between_presents))
 
         fps = Fps(frametimes)
 
         # results of current CPU in results dict
-        results[cpu] = {
+        results[str(cpu)] = {
             "maximum": round(fps.maximum(), 2),
             "average": round(fps.average(), 2),
             "minimum": round(fps.minimum(), 2),
@@ -134,6 +170,8 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             },
         }
 
+    formatted_results: dict[str, dict[str, str]] = {}
+
     # analyze best values for each metric
     for metric in (
         "maximum",
@@ -141,13 +179,19 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
         "minimum",
         "stdev",
         # "percentile1", "percentile0.1" etc
-        *(tuple(f"{metric}{value}" for metric in ("percentile", "lows") for value in (1, 0.1, 0.01, 0.005))),
+        *(
+            tuple(
+                f"{metric}{value}"
+                for metric in ("percentile", "lows")
+                for value in (1, 0.1, 0.01, 0.005)
+            )
+        ),
     ):
         first_key = next(iter(results))  # gets first key name, usually "0" for CPU 0
         best_value = results[first_key][metric]  # base value
         second_best_value = best_value
 
-        for _, _results in results.items():
+        for _results in results.values():
             metric_value = _results[metric]
             if metric_value > best_value:
                 second_best_value = best_value
@@ -155,6 +199,9 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
         # iterate over all values again and find matches
         for _cpu, _results in results.items():
+            # initialize CPU dict
+            formatted_results[_cpu] = {}
+
             metric_value = _results[metric]
             # abs is for negative stdev
             # :.2f is for .00 numerical formatting
@@ -162,11 +209,11 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             # apply color if match is found
 
             if metric_value == best_value:
-                _results[metric] = f"{green}*{new_value}{default}"
+                formatted_results[_cpu][metric] = f"{green}*{new_value}{default}"
             elif metric_value == second_best_value:
-                _results[metric] = f"{yellow}*{new_value}{default}"
+                formatted_results[_cpu][metric] = f"{yellow}*{new_value}{default}"
             else:
-                _results[metric] = new_value
+                formatted_results[_cpu][metric] = new_value
 
     os.system("<nul set /p=\x1B[8;50;1000t")
 
@@ -191,9 +238,9 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
 
     print()
 
-    for _cpu, _results in results.items():
+    for _cpu, _results in formatted_results.items():
         print(f"{_cpu:<5}", end="")
-        for metric, metric_value in _results.items():
+        for metric_value in _results.values():
             ## padding needs to be larger to compensate for color chars
             right_padding = 22 if "[" in metric_value else 13
             print(f"{metric_value:<{right_padding}}", end="")
@@ -202,18 +249,20 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     print()
 
 
-def main() -> int:
+def main() -> int:  # noqa: PLR0911, C901, PLR0912, D103, PLR0915
     version = "0.15.11"
 
     print(
-        f"AutoGpuAffinity Version {version} - GPLv3\nGitHub - https://github.com/amitxv\nDonate - https://www.buymeacoffee.com/amitxv\n"
+        f"AutoGpuAffinity Version {version} - GPLv3\nGitHub - https://github.com/amitxv\nDonate - https://www.buymeacoffee.com/amitxv\n",
     )
 
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("error: administrator privileges required")
         return 1
 
-    gpu_hwids: List[str] = [gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()]
+    gpu_hwids: list[str] = [
+        gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()
+    ]
 
     if (cpu_count := os.cpu_count()) is not None:
         cpu_count -= 1  # os.cpu_count() returns core count not last CPU index
@@ -253,10 +302,19 @@ def main() -> int:
         display_results(args.analyze, windows_version_info.major >= 10)
         return 0
 
-    basicdisplay_start = read_value("SYSTEM\\CurrentControlSet\\Services\\BasicDisplay", "Start")
+    basicdisplay_start = read_value(
+        "SYSTEM\\CurrentControlSet\\Services\\BasicDisplay",
+        "Start",
+    )
 
-    if basicdisplay_start == 4:
-        print("error: please enable the BasicDisplay driver to prevent issues with restarting the GPU driver")
+    if basicdisplay_start is None:
+        print("error: unable to get BasicDisplay start type")
+        return 1
+
+    if int(basicdisplay_start) == 4:
+        print(
+            "error: please enable the BasicDisplay driver to prevent issues with restarting the GPU driver",
+        )
         return 1
 
     if args.apply_affinity:
@@ -271,10 +329,12 @@ def main() -> int:
     # use 1.6.0 on Windows Server
     presentmon = f"PresentMon-{'1.9.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
 
-    config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
+    config_path = (
+        args.config if args.config is not None else f"{program_path}\\config.ini"
+    )
     user32 = ctypes.windll.user32
 
-    subject_paths: Dict[int, str] = {
+    subject_paths: dict[int, str] = {
         1: f"{program_path}\\bin\\liblava\\lava-triangle.exe",
         2: f"{program_path}\\bin\\Benchmark.DirectX9.Black.White.exe",
     }
@@ -291,21 +351,28 @@ def main() -> int:
         print("error: config file not found")
         return 1
 
-    if config.getint("settings", "cache_duration") < 0 or config.getint("settings", "benchmark_duration") <= 0:
+    if (
+        config.getint("settings", "cache_duration") < 0
+        or config.getint("settings", "benchmark_duration") <= 0
+    ):
         print("error: invalid durations specified")
         return 1
 
-    if config.getboolean("xperf", "enabled") and not os.path.exists(config.get("xperf", "location")):
+    if config.getboolean("xperf", "enabled") and not os.path.exists(
+        config.get("xperf", "location"),
+    ):
         print("error: invalid xperf path specified")
         return 1
 
     if config.getint("MSI Afterburner", "profile") > 0 and not os.path.exists(
-        config.get("MSI Afterburner", "location")
+        config.get("MSI Afterburner", "location"),
     ):
         print("error: invalid MSI Afterburner path specified")
         return 1
 
-    if (subject_path := subject_paths.get(config.getint("settings", "subject"))) is None:
+    if (
+        subject_path := subject_paths.get(config.getint("settings", "subject"))
+    ) is None:
         print("error: invalid subject specified")
         return 1
 
@@ -316,7 +383,7 @@ def main() -> int:
 
     if custom_cpus:
         # remove duplicates and sort
-        benchmark_cpus = sorted(list(set(custom_cpus)))
+        benchmark_cpus = sorted(set(custom_cpus))
 
         if not all(0 <= cpu <= cpu_count for cpu in benchmark_cpus):
             print("error: invalid cpus in custom_cpus array")
@@ -324,7 +391,9 @@ def main() -> int:
     else:
         benchmark_cpus = list(range(cpu_count + 1))
 
-    session_directory = f"{program_path}\\captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
+    session_directory = (
+        f"{program_path}\\captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
+    )
     estimated_time_seconds = (
         10
         + config.getint("settings", "cache_duration")
@@ -349,8 +418,8 @@ def main() -> int:
         Save ETLs                {config.getboolean("xperf", "save_etls")}
         Window Mode              {f"Fullscreen ({user32.GetSystemMetrics(0)}x{user32.GetSystemMetrics(1)})" if config.getboolean("liblava", "fullscreen") else f"Windowed ({config.get('liblava', 'x_resolution')}x{config.get('liblava', 'y_resolution')})"}
         Sync Affinity            {config.getboolean("settings", "sync_driver_affinity")}
-        """
-        )
+        """,
+        ),
     )
 
     if not config.getboolean("settings", "skip_confirmation"):
@@ -369,7 +438,12 @@ def main() -> int:
     # stop any existing trace sessions and processes
     if config.getboolean("xperf", "enabled"):
         os.mkdir(f"{session_directory}\\xperf")
-        subprocess.run([config.get("xperf", "location"), "-stop"], **stdnull, check=False)
+        subprocess.run(
+            [config.get("xperf", "location"), "-stop"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
 
     kill_processes("xperf.exe", subject_fname, presentmon)
 
@@ -382,7 +456,7 @@ def main() -> int:
         if (profile := config.getint("MSI Afterburner", "profile")) > 0:
             start_afterburner(config.get("MSI Afterburner", "location"), profile)
 
-        affinity_args: List[str] = []
+        affinity_args: list[str] = []
         if config.getboolean("settings", "sync_driver_affinity"):
             affinity_args.extend(["/affinity", hex(1 << cpu)])
 
@@ -396,7 +470,10 @@ def main() -> int:
         time.sleep(5 + config.getint("settings", "cache_duration"))
 
         if config.getboolean("xperf", "enabled"):
-            subprocess.run([config.get("xperf", "location"), "-on", "base+interrupt+dpc"], check=False)
+            subprocess.run(
+                [config.get("xperf", "location"), "-on", "base+interrupt+dpc"],
+                check=False,
+            )
 
         subprocess.run(
             [
@@ -411,20 +488,28 @@ def main() -> int:
                 f"{session_directory}\\CSVs\\CPU-{cpu}.csv",
                 "-terminate_after_timed",
             ],
-            **stdnull,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             check=False,
         )
 
         if not os.path.exists(f"{session_directory}\\CSVs\\CPU-{cpu}.csv"):
-            print("error: csv log unsuccessful, this may be due to a missing dependency or windows component")
+            print(
+                "error: csv log unsuccessful, this may be due to a missing dependency or windows component",
+            )
             shutil.rmtree(session_directory)
             apply_affinity(gpu_hwids, apply=False)
             return 1
 
         if config.getboolean("xperf", "enabled"):
             subprocess.run(
-                [config.get("xperf", "location"), "-d", f"{session_directory}\\xperf\\CPU-{cpu}.etl"],
-                **stdnull,
+                [
+                    config.get("xperf", "location"),
+                    "-d",
+                    f"{session_directory}\\xperf\\CPU-{cpu}.etl",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 check=False,
             )
 
@@ -438,7 +523,7 @@ def main() -> int:
                     f"{session_directory}\\xperf\\CPU-{cpu}.txt",
                     "-a",
                     "dpcisr",
-                ]
+                ],
             ) as process:
                 process.wait()
                 if process.returncode != 0:
@@ -476,7 +561,7 @@ if __name__ == "__main__":
     finally:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         process_array = (ctypes.c_uint * 1)()
-        num_processes = kernel32.GetConsoleProcessList(process_array, 1)
+        num_processes = kernel32.GetConsoleProcesslist(process_array, 1)
         # only pause if script was ran by double-clicking
         if num_processes < 3:
             input("info: press enter to exit")
