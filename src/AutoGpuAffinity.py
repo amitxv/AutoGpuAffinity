@@ -253,6 +253,27 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     print_table(formatted_results)
 
 
+def parse_array(str_array: str) -> list[int]:
+    # return if empty
+    if str_array == "[]":
+        return []
+
+    # convert to list[str]
+    # [1:-1] removes brackets
+    split_array = [x.strip() for x in str_array[1:-1].split(",")]
+
+    parsed_list: list[int] = []
+
+    for item in split_array:
+        if ".." in item:
+            lower, upper = item.split("..")
+            parsed_list.extend(range(int(lower), int(upper) + 1))
+        else:
+            parsed_list.append(int(item))
+
+    return parsed_list
+
+
 def main() -> int:
     version = "0.15.11"
 
@@ -383,7 +404,7 @@ def main() -> int:
     subject_fname = os.path.basename(subject_path)
 
     # can't update config with list, must be a string
-    custom_cpus = json.loads(config.get("settings", "custom_cpus"))
+    custom_cpus = parse_array(config.get("settings", "custom_cpus"))
 
     if custom_cpus:
         # remove duplicates and sort
