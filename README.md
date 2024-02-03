@@ -41,7 +41,7 @@ optional arguments:
 
 - Run **AutoGpuAffinity** through the command-line and press enter when ready to start benchmarking
 
-- After the tool has benchmarked each core, the GPU affinity will be reset to the Windows default and a table will be displayed with the results. The xperf report is located in the session directory
+- After the tool has benchmarked each core, the GPU affinity will be reset to the Windows default and a table will be displayed with the results. Green values indicate the highest value and yellow indicates the second-highest value for a given metric. The xperf report is located in the session directory
 
 - Run the tool two or three times. If the same core is consistently performant and no 0.005% Lows values are absurdly low compared to other results, then your results are reproducible and your testing environment is consistent
 
