@@ -141,7 +141,7 @@ def print_table(formatted_results: dict[str, dict[str, str]]):
         "0.01% Low",
         "0.005% Low",
     ):
-        print(f"{metric:<13}", end="")
+        print(f"{metric:<12}", end="")
 
     print()  # new line
 
@@ -150,7 +150,7 @@ def print_table(formatted_results: dict[str, dict[str, str]]):
         print(f"{_cpu:<5}", end="")
         for metric_value in _results.values():
             # padding needs to be larger to compensate for color chars
-            right_padding = 22 if "[" in metric_value else 13
+            right_padding = 21 if "[" in metric_value else 12
             print(f"{metric_value:<{right_padding}}", end="")
         print()  # new line
 
@@ -161,17 +161,25 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     """Display a table of the benchmark results."""
     results: dict[str, dict[str, float]] = {}
 
+    # each index represents the rank (e.g. index 0 is 1st)
+    colors: list[str] = [
+        "\x1b[92m",  # Green
+        "\x1b[93m",  # Yellow
+    ]
+
     if enable_color:
-        green = "\x1b[92m"
-        yellow = "\x1b[93m"
         default = "\x1b[0m"
         os.system("color")
     else:
-        green = ""
-        yellow = ""
         default = ""
 
     cpus = sorted([int(file.strip("CPU-.csv")) for file in os.listdir(csv_directory)])
+    num_cpus = len(cpus)
+    # 1 CPUs means no ranking will be done
+    # 2 CPUs means only one metric will be ranked since it's binary
+    # always leave last place unranked
+
+    top_n_values = num_cpus - 1 if num_cpus < 3 else len(colors)
 
     for cpu in cpus:
         csv_file = f"CPU-{cpu}.csv"
@@ -204,7 +212,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             },
         }
 
-    formatted_results: dict[str, dict[str, str]] = {}
+    formatted_results: dict[str, dict[str, str]] = {cpu: {} for cpu in results}
 
     # analyze best values for each metric
     for metric in (
@@ -221,33 +229,30 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
             )
         ),
     ):
-        first_key = next(iter(results))  # gets first key name, usually "0" for CPU 0
-        best_value = results[first_key][metric]  # base value
-        second_best_value = best_value
+        # set of all values within the metric
+        values = {_results[metric] for _results in results.values()}
 
-        for _results in results.values():
-            metric_value = _results[metric]
-            if metric_value > best_value:
-                second_best_value = best_value
-                best_value = metric_value
+        # create ordered list without duplicates of top n values
+        top_values = list(dict.fromkeys(sorted(values, reverse=True)[:top_n_values]))
 
-        # iterate over all values again and find matches
         for _cpu, _results in results.items():
-            # initialize CPU dict
-            formatted_results[_cpu] = {}
-
             metric_value = _results[metric]
-            # abs is for negative stdev
+
+            # abs is for negative values such as stdev
             # :.2f is for .00 numerical formatting
             new_value = f"{abs(metric_value):.2f}"
-            # apply color if match is found
 
-            if metric_value == best_value:
-                formatted_results[_cpu][metric] = f"{green}*{new_value}{default}"
-            elif metric_value == second_best_value:
-                formatted_results[_cpu][metric] = f"{yellow}*{new_value}{default}"
-            else:
-                formatted_results[_cpu][metric] = new_value
+            # determine rank of value
+            if enable_color:
+                try:
+                    nth_best = top_values.index(metric_value)
+                    color = colors[nth_best]
+                    new_value = f"{color}{new_value}{default}"
+                except ValueError:
+                    # don't highlight value as top n by leaving it unmodified
+                    pass
+
+            formatted_results[_cpu][metric] = new_value
 
     os.system("<nul set /p=\x1B[8;50;1000t")
 
