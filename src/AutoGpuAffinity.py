@@ -253,7 +253,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
     print_table(formatted_results)
 
 
-def main() -> int:  # noqa: PLR0911, C901, PLR0912, D103, PLR0915
+def main() -> int:
     version = "0.15.11"
 
     print(
