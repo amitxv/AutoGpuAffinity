@@ -29,7 +29,6 @@ def create_lava_cfg(
     x_resolution: int,
     y_resolution: int,
 ) -> None:
-    """Create liblava configuration file."""
     lava_triangle_folder = f"{os.environ['APPDATA']}\\liblava\\lava triangle"
     os.makedirs(lava_triangle_folder, exist_ok=True)
     lava_triangle_config = f"{lava_triangle_folder}\\window.json"
@@ -54,7 +53,6 @@ def create_lava_cfg(
 
 
 def kill_processes(*targets: str) -> None:
-    """Kill processes."""
     for process in targets:
         subprocess.run(
             ["taskkill", "/F", "/IM", process],
@@ -65,7 +63,6 @@ def kill_processes(*targets: str) -> None:
 
 
 def read_value(path: str, value_name: str) -> Any | None:
-    """Read key values from Windows registry."""
     try:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE,
@@ -79,7 +76,6 @@ def read_value(path: str, value_name: str) -> Any | None:
 
 
 def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
-    """Apply affinity policies to specified device hwids."""
     for hwid in hwids:
         policy_path = f"SYSTEM\\ControlSet001\\Enum\\{hwid}\\Device Parameters\\Interrupt Management\\Affinity Policy"
         if apply and cpu > -1:
@@ -117,7 +113,6 @@ def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
 
 
 def start_afterburner(path: str, profile: int) -> None:
-    """Start MSI Afterburner with a specified profile."""
     with subprocess.Popen([path, f"/Profile{profile}", "/Q"]) as process:
         time.sleep(5)
         process.kill()
@@ -158,7 +153,6 @@ def print_table(formatted_results: dict[str, dict[str, str]]):
 
 
 def display_results(csv_directory: str, enable_color: bool) -> None:
-    """Display a table of the benchmark results."""
     results: dict[str, dict[str, float]] = {}
 
     # each index represents the rank (e.g. index 0 is 1st)
