@@ -1,5 +1,1 @@
 target-version = "py312"
-
-[lint]
-select = ["ALL"]
-ignore = ["T201", "PTH", "PTH103", "E501", "FBT001"]
