@@ -1,9 +1,11 @@
 import math
-from typing import List
+from typing import Self
 
 
 class Fps:
-    def __init__(self, frametimes: List[float]) -> None:
+    """Computes various FPS metrics for frametimes dataset."""
+
+    def __init__(self: Self, frametimes: list[float]) -> None:
         self.sorted_frametimes = sorted(frametimes, reverse=True)
 
         # cache values
@@ -11,7 +13,8 @@ class Fps:
         self.length = len(frametimes)
         self.mean = 1000 / (self.total / self.length)
 
-    def lows(self, value: float) -> float:
+    def lows(self: Self, value: float) -> float:
+        """Return x% lows value."""
         current_total = 0.0
 
         for frametime in self.sorted_frametimes:
@@ -20,18 +23,25 @@ class Fps:
                 return 1000 / frametime
         return 0.0
 
-    def percentile(self, value: float) -> float:
+    def percentile(self: Self, value: float) -> float:
+        """Return x% percentile value."""
         return 1000 / self.sorted_frametimes[math.ceil(value / 100 * self.length) - 1]
 
-    def stdev(self) -> float:
-        squared_deviations = sum((1000 / framerate - self.mean) ** 2 for framerate in self.sorted_frametimes)
+    def stdev(self: Self) -> float:
+        """Return standard deviation value."""
+        squared_deviations = sum(
+            (1000 / framerate - self.mean) ** 2 for framerate in self.sorted_frametimes
+        )
         return math.sqrt(squared_deviations / (self.length - 1))  # bessel's correction
 
-    def maximum(self) -> float:
+    def maximum(self: Self) -> float:
+        """Return maximum value."""
         return 1000 / self.sorted_frametimes[-1]
 
-    def minimum(self) -> float:
+    def minimum(self: Self) -> float:
+        """Return minimum value."""
         return 1000 / self.sorted_frametimes[0]
 
-    def average(self) -> float:
+    def average(self: Self) -> float:
+        """Return average value."""
         return self.mean
