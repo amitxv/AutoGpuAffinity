@@ -15,7 +15,7 @@ from configparser import ConfigParser
 from typing import Any
 
 import wmi
-from computeframetimes import Fps
+from compute_frametimes import Fps
 
 program_path = (
     os.path.dirname(sys.executable)
