@@ -7,6 +7,9 @@ on:
         description: "Version of the program to build. This will be used for the tag and release name."
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
