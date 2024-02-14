@@ -1,8 +1,11 @@
 name: Create release
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of the program to build. This will be used for the tag and release name."
+        required: true
 
 jobs:
   build:
@@ -36,7 +39,10 @@ jobs:
       - name: Zip release
         run: Compress-Archive -Path AutoGpuAffinity -DestinationPath AutoGpuAffinity.zip
 
-      - name: Upload to release
-        uses: softprops/action-gh-release@v1
+      - name: Create release
+        uses: ncipollo/release-action@v1
         with:
-          files: AutoGpuAffinity.zip
+          tag: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          artifacts: AutoGpuAffinity.zip
+          generateReleaseNotes: true
