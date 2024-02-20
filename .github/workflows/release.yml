@@ -7,6 +7,12 @@ on:
         description: "Version of the program to build. This will be used for the tag and release name."
         required: true
 
+      pre-release:
+        description: "Pre-release"
+        required: true
+        default: false
+        type: boolean
+
 permissions:
   contents: write
 
@@ -47,5 +53,6 @@ jobs:
         with:
           tag: ${{ inputs.version }}
           name: ${{ inputs.version }}
+          prerelease: ${{ inputs.pre-release }}
           artifacts: AutoGpuAffinity.zip
           generateReleaseNotes: true
