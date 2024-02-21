@@ -54,12 +54,17 @@ def create_lava_cfg(
 
 def kill_processes(*targets: str) -> None:
     for process in targets:
-        subprocess.run(
-            ["taskkill", "/F", "/IM", process],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/IM", process],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            # process isn't running
+            if e.returncode != 128:
+                raise
 
 
 def read_value(path: str, value_name: str) -> Any | None:
@@ -108,7 +113,7 @@ def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
 
     subprocess.run(
         [f"{program_path}\\bin\\restart64\\restart64.exe", "/q"],
-        check=False,
+        check=True,
     )
 
 
@@ -463,12 +468,18 @@ def main() -> int:
     # stop any existing trace sessions and processes
     if config.getboolean("xperf", "enabled"):
         os.mkdir(f"{session_directory}\\xperf")
-        subprocess.run(
-            [config.get("xperf", "location"), "-stop"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
+
+        try:
+            subprocess.run(
+                [config.get("xperf", "location"), "-stop"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            # ignore if already stopped
+            if e.returncode != 2147946601:
+                raise
 
     kill_processes("xperf.exe", subject_fname, presentmon)
 
@@ -488,7 +499,7 @@ def main() -> int:
         subprocess.run(
             ["start", "", *affinity_args, subject_path],
             shell=True,
-            check=False,
+            check=True,
         )
 
         # 5s offset to allow subject to launch
@@ -497,7 +508,7 @@ def main() -> int:
         if config.getboolean("xperf", "enabled"):
             subprocess.run(
                 [config.get("xperf", "location"), "-on", "base+interrupt+dpc"],
-                check=False,
+                check=True,
             )
 
         subprocess.run(
@@ -515,7 +526,7 @@ def main() -> int:
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            check=False,
+            check=True,
         )
 
         if not os.path.exists(f"{session_directory}\\CSVs\\CPU-{cpu}.csv"):
@@ -535,7 +546,7 @@ def main() -> int:
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                check=False,
+                check=True,
             )
 
             try:
