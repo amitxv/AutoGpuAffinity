@@ -538,24 +538,25 @@ def main() -> int:
                 check=False,
             )
 
-            with subprocess.Popen(
-                [
-                    config.get("xperf", "location"),
-                    "-quiet",
-                    "-i",
-                    f"{session_directory}\\xperf\\CPU-{cpu}.etl",
-                    "-o",
-                    f"{session_directory}\\xperf\\CPU-{cpu}.txt",
-                    "-a",
-                    "dpcisr",
-                ],
-            ) as process:
-                process.wait()
-                if process.returncode != 0:
-                    print("error: unable to generate dpcisr report")
-                    shutil.rmtree(session_directory)
-                    apply_affinity(gpu_hwids, apply=False)
-                    return 1
+            try:
+                subprocess.run(
+                    [
+                        config.get("xperf", "location"),
+                        "-quiet",
+                        "-i",
+                        f"{session_directory}\\xperf\\CPU-{cpu}.etl",
+                        "-o",
+                        f"{session_directory}\\xperf\\CPU-{cpu}.txt",
+                        "-a",
+                        "dpcisr",
+                    ],
+                    check=True,
+                )
+            except subprocess.CalledProcessError:
+                print("error: unable to generate dpcisr report")
+                shutil.rmtree(session_directory)
+                apply_affinity(gpu_hwids, apply=False)
+                return 1
 
             if not config.getboolean("xperf", "save_etls"):
                 os.remove(f"{session_directory}\\xperf\\CPU-{cpu}.etl")
