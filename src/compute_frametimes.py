@@ -24,9 +24,7 @@ class Fps:
         return 1000 / self.sorted_frametimes[math.ceil(value / 100 * self.length) - 1]
 
     def stdev(self: Self) -> float:
-        squared_deviations = sum(
-            (1000 / framerate - self.mean) ** 2 for framerate in self.sorted_frametimes
-        )
+        squared_deviations = sum((1000 / framerate - self.mean) ** 2 for framerate in self.sorted_frametimes)
         return math.sqrt(squared_deviations / (self.length - 1))  # bessel's correction
 
     def maximum(self: Self) -> float:

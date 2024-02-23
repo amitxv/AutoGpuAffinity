@@ -17,11 +17,7 @@ from typing import Any
 import wmi
 from compute_frametimes import Fps
 
-program_path = (
-    os.path.dirname(sys.executable)
-    if getattr(sys, "frozen", False)
-    else os.path.dirname(__file__)
-)
+program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
 
 
 def create_lava_cfg(
@@ -190,9 +186,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
                 # convert key names to lowercase because column names changed in a newer version of PresentMon
                 row_lower = {key.lower(): value for key, value in row.items()}
 
-                if (
-                    ms_between_presents := row_lower.get("msbetweenpresents")
-                ) is not None:
+                if (ms_between_presents := row_lower.get("msbetweenpresents")) is not None:
                     frametimes.append(float(ms_between_presents))
 
         fps = Fps(frametimes)
@@ -220,13 +214,7 @@ def display_results(csv_directory: str, enable_color: bool) -> None:
         "minimum",
         "stdev",
         # "percentile1", "percentile0.1" etc
-        *(
-            tuple(
-                f"{metric}{value}"
-                for metric in ("percentile", "lows")
-                for value in (1, 0.1, 0.01, 0.005)
-            )
-        ),
+        *(tuple(f"{metric}{value}" for metric in ("percentile", "lows") for value in (1, 0.1, 0.01, 0.005))),
     ):
         # set of all values within the metric
         values = {_results[metric] for _results in results.values()}
@@ -290,9 +278,7 @@ def main() -> int:
         print("error: administrator privileges required")
         return 1
 
-    gpu_hwids: list[str] = [
-        gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()
-    ]
+    gpu_hwids: list[str] = [gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()]
 
     if (cpu_count := os.cpu_count()) is not None:
         cpu_count -= 1  # os.cpu_count() returns core count not last CPU index
@@ -359,9 +345,7 @@ def main() -> int:
     # use 1.6.0 on Windows Server
     presentmon = f"PresentMon-{'1.9.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
 
-    config_path = (
-        args.config if args.config is not None else f"{program_path}\\config.ini"
-    )
+    config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
     user32 = ctypes.windll.user32
 
     subject_paths: dict[int, str] = {
@@ -381,10 +365,7 @@ def main() -> int:
         print("error: config file not found")
         return 1
 
-    if (
-        config.getint("settings", "cache_duration") < 0
-        or config.getint("settings", "benchmark_duration") <= 0
-    ):
+    if config.getint("settings", "cache_duration") < 0 or config.getint("settings", "benchmark_duration") <= 0:
         print("error: invalid durations specified")
         return 1
 
@@ -400,9 +381,7 @@ def main() -> int:
         print("error: invalid MSI Afterburner path specified")
         return 1
 
-    if (
-        subject_path := subject_paths.get(config.getint("settings", "subject"))
-    ) is None:
+    if (subject_path := subject_paths.get(config.getint("settings", "subject"))) is None:
         print("error: invalid subject specified")
         return 1
 
@@ -421,9 +400,7 @@ def main() -> int:
     else:
         benchmark_cpus = list(range(cpu_count + 1))
 
-    session_directory = (
-        f"{program_path}\\captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
-    )
+    session_directory = f"{program_path}\\captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
     estimated_time_seconds = (
         10
         + config.getint("settings", "cache_duration")
