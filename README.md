@@ -14,7 +14,7 @@ I am not responsible for damage caused to your computer. There is a risk of your
 AutoGpuAffinity
 GitHub - https://github.com/amitxv
 
-usage: main.py [-h] [--config <config>] [--analyze <csv directory>] [--apply_affinity <cpu>]
+usage: AutoGpuAffinity [-h] [--config <config>] [--analyze <csv directory>] [--apply_affinity <cpu>]
 
 optional arguments:
   -h, --help            show this help message and exit
