@@ -1,4 +1,3 @@
-
-src/lava.log
-src/captures
+AutoGpuAffinity/lava.log
+AutoGpuAffinity/captures
 *.pyc
