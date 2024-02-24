@@ -36,14 +36,14 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Build executable
-        run: pyinstaller "AutoGpuAffinity\main.py" --onefile --name AutoGpuAffinity
+        run: pyinstaller AutoGpuAffinity\main.py --onefile --name AutoGpuAffinity
 
       - name: Create folder structure
         run: |
           mkdir building\AutoGpuAffinity
-          move "dist\AutoGpuAffinity.exe" building\AutoGpuAffinity
-          move "AutoGpuAffinity\bin" building\AutoGpuAffinity
-          move "AutoGpuAffinity\config.ini" building\AutoGpuAffinity
+          move dist\AutoGpuAffinity.exe building\AutoGpuAffinity
+          move AutoGpuAffinity\bin building\AutoGpuAffinity
+          move AutoGpuAffinity\config.ini building\AutoGpuAffinity
 
       - name: Zip release
         run: Compress-Archive -Path building\AutoGpuAffinity -DestinationPath AutoGpuAffinity.zip
