@@ -3,6 +3,7 @@ import csv
 import ctypes
 import datetime
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -18,6 +19,7 @@ import wmi
 from compute_frametimes import Fps
 
 program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
+logger = logging.getLogger("CLI")
 
 
 def create_lava_cfg(
@@ -268,6 +270,8 @@ def parse_array(str_array: str) -> list[int]:
 
 
 def main() -> int:
+    logging.basicConfig(format="[%(name)s] %(levelname)s: %(message)s", level=logging.INFO)
+
     version = "0.16.0"
 
     print(
@@ -275,7 +279,7 @@ def main() -> int:
     )
 
     if not ctypes.windll.shell32.IsUserAnAdmin():
-        print("error: administrator privileges required")
+        logger.error("administrator privileges required")
         return 1
 
     gpu_hwids: list[str] = [gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()]
@@ -283,7 +287,7 @@ def main() -> int:
     if (cpu_count := os.cpu_count()) is not None:
         cpu_count -= 1  # os.cpu_count() returns core count not last CPU index
     else:
-        print("error: unable to get CPU count")
+        logger.error("unable to get CPU count")
         return 1
 
     parser = argparse.ArgumentParser()
@@ -324,24 +328,25 @@ def main() -> int:
     )
 
     if basicdisplay_start is None:
-        print("error: unable to get BasicDisplay start type")
+        logger.error("unable to get BasicDisplay start type")
         return 1
 
     if int(basicdisplay_start) == 4:
-        print(
-            "error: please enable the BasicDisplay driver to prevent issues with restarting the GPU driver",
+        logger.error(
+            "enable the BasicDisplay driver to prevent issues with restarting the GPU driver",
         )
         return 1
 
     if args.apply_affinity:
         requested_affinity = int(args.apply_affinity)
         if not 0 <= requested_affinity <= cpu_count:
-            print("error: invalid affinity")
+            logger.error("invalid affinity")
             return 1
 
         apply_affinity(gpu_hwids, requested_affinity)
-        print(f"info: set gpu driver affinity to: CPU {requested_affinity}")
+        logger.info(f"set gpu driver affinity to: CPU {requested_affinity}")
         return 0
+
     # use 1.6.0 on Windows Server
     presentmon = f"PresentMon-{'1.9.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
 
@@ -358,31 +363,31 @@ def main() -> int:
     config.read(config_path)
 
     if not gpu_hwids:
-        print("error: no graphics card found")
+        logger.error("no graphics card found")
         return 1
 
     if not os.path.exists(config_path):
-        print("error: config file not found")
+        logger.error("config file not found")
         return 1
 
     if config.getint("settings", "cache_duration") < 0 or config.getint("settings", "benchmark_duration") <= 0:
-        print("error: invalid durations specified")
+        logger.error("invalid durations specified")
         return 1
 
     if config.getboolean("xperf", "enabled") and not os.path.exists(
         config.get("xperf", "location"),
     ):
-        print("error: invalid xperf path specified")
+        logger.error("invalid xperf path specified")
         return 1
 
     if config.getint("MSI Afterburner", "profile") > 0 and not os.path.exists(
         config.get("MSI Afterburner", "location"),
     ):
-        print("error: invalid MSI Afterburner path specified")
+        logger.error("invalid MSI Afterburner path specified")
         return 1
 
     if (subject_path := subject_paths.get(config.getint("settings", "subject"))) is None:
-        print("error: invalid subject specified")
+        logger.error("invalid subject specified")
         return 1
 
     subject_fname = os.path.basename(subject_path)
@@ -395,7 +400,7 @@ def main() -> int:
         benchmark_cpus = sorted(set(custom_cpus))
 
         if not all(0 <= cpu <= cpu_count for cpu in benchmark_cpus):
-            print("error: invalid cpus in custom_cpus array")
+            logger.error("invalid cpus in custom_cpus array")
             return 1
     else:
         benchmark_cpus = list(range(cpu_count + 1))
@@ -461,7 +466,7 @@ def main() -> int:
     kill_processes("xperf.exe", subject_fname, presentmon)
 
     for cpu in benchmark_cpus:
-        print(f"info: benchmarking CPU {cpu}")
+        logger.info("benchmarking CPU %d", cpu)
 
         apply_affinity(gpu_hwids, cpu)
         time.sleep(5)
@@ -507,8 +512,8 @@ def main() -> int:
         )
 
         if not os.path.exists(f"{session_directory}\\CSVs\\CPU-{cpu}.csv"):
-            print(
-                "error: csv log unsuccessful, this may be due to a missing dependency or windows component",
+            logger.error(
+                "csv log unsuccessful, this may be due to a missing dependency or windows component",
             )
             shutil.rmtree(session_directory)
             apply_affinity(gpu_hwids, apply=False)
@@ -541,7 +546,7 @@ def main() -> int:
                     check=True,
                 )
             except subprocess.CalledProcessError:
-                print("error: unable to generate dpcisr report")
+                logger.error("unable to generate dpcisr report")
                 shutil.rmtree(session_directory)
                 apply_affinity(gpu_hwids, apply=False)
                 return 1
