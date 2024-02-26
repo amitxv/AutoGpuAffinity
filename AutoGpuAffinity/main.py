@@ -62,6 +62,7 @@ def kill_processes(*targets: str) -> None:
         except subprocess.CalledProcessError as e:
             # process isn't running
             if e.returncode != 128:
+                logger.exception("an error occured when killing %s. %s", process, e)
                 raise
 
 
@@ -75,6 +76,7 @@ def read_value(path: str, value_name: str) -> Any | None:
         ) as key:
             return winreg.QueryValueEx(key, value_name)[0]
     except FileNotFoundError:
+        logger.debug("%s %s not exists", path, value_name)
         return None
 
 
@@ -107,6 +109,7 @@ def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
                     winreg.DeleteValue(key, "DevicePolicy")
                     winreg.DeleteValue(key, "AssignmentSetOverride")
             except FileNotFoundError:
+                logger.debug("affinity policy has already been removed for %s", hwid)
                 pass
 
     subprocess.run(
@@ -461,6 +464,7 @@ def main() -> int:
         except subprocess.CalledProcessError as e:
             # ignore if already stopped
             if e.returncode != 2147946601:
+                logger.exception(e)
                 raise
 
     kill_processes("xperf.exe", subject_fname, presentmon)
