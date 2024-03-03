@@ -312,7 +312,7 @@ def main() -> int:
         help="analyze csv files from a previous benchmark",
     )
     parser.add_argument(
-        "--apply_affinity",
+        "--apply-affinity",
         metavar="<cpu>",
         type=str,
         help="assign a single core affinity to graphics drivers",

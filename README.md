@@ -14,14 +14,14 @@ I am not responsible for damage caused to your computer. There is a risk of your
 AutoGpuAffinity
 GitHub - https://github.com/amitxv
 
-usage: AutoGpuAffinity [-h] [--config <config>] [--analyze <csv directory>] [--apply_affinity <cpu>]
+usage: AutoGpuAffinity [-h] [--config <config>] [--analyze <csv directory>] [--apply-affinity <cpu>]
 
 optional arguments:
   -h, --help            show this help message and exit
   --config <config>     path to config file
   --analyze <csv directory>
                         analyze csv files from a previous benchmark
-  --apply_affinity <cpu>
+  --apply-affinity <cpu>
                         assign a single core affinity to graphics drivers
 ```
 
