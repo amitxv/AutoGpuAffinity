@@ -274,7 +274,7 @@ def parse_array(str_array: str) -> list[int]:
 def main() -> int:
     logging.basicConfig(format="[%(name)s] %(levelname)s: %(message)s", level=logging.INFO)
 
-    version = "0.16.0"
+    version = "0.17.0"
 
     print(
         f"AutoGpuAffinity Version {version} - GPLv3\nGitHub - https://github.com/amitxv\nDonate - https://www.buymeacoffee.com/amitxv\n",
