@@ -110,7 +110,6 @@ def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
                     winreg.DeleteValue(key, "AssignmentSetOverride")
             except FileNotFoundError:
                 logger.debug("affinity policy has already been removed for %s", hwid)
-                pass
 
     subprocess.run(
         [f"{program_path}\\bin\\restart64\\restart64.exe", "/q"],
@@ -347,7 +346,7 @@ def main() -> int:
             return 1
 
         apply_affinity(gpu_hwids, requested_affinity)
-        logger.info(f"set gpu driver affinity to: CPU {requested_affinity}")
+        logger.info("set gpu driver affinity to: CPU %d", requested_affinity)
         return 0
 
     # use 1.6.0 on Windows Server
