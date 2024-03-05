@@ -572,14 +572,14 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    __exit_code__ = 0
+    exit_code = 0
     try:
-        __exit_code__ = main()
+        exit_code = main()
     except KeyboardInterrupt:
         sys.exit(1)
     except Exception:
         print(traceback.format_exc())
-        __exit_code__ = 1
+        exit_code = 1
     finally:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         process_array = (ctypes.c_uint * 1)()
@@ -588,4 +588,4 @@ if __name__ == "__main__":
         if num_processes < 3:
             input("press enter to exit")
 
-        sys.exit(__exit_code__)
+        sys.exit(exit_code)
