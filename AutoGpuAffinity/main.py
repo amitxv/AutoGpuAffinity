@@ -501,7 +501,7 @@ def main() -> int:
 
         subprocess.run(
             [
-                f".\\bin\\PresentMon\\{presentmon}",
+                f"bin\\PresentMon\\{presentmon}",
                 "-stop_existing_session",
                 "-no_top",
                 "-timed",
