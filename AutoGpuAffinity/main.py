@@ -18,7 +18,6 @@ from typing import Any
 import wmi
 from compute_frametimes import Fps
 
-program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
 logger = logging.getLogger("CLI")
 
 
@@ -112,7 +111,7 @@ def apply_affinity(hwids: list[str], cpu: int = -1, apply: bool = True) -> None:
                 logger.debug("affinity policy has already been removed for %s", hwid)
 
     subprocess.run(
-        [f"{program_path}\\bin\\restart64\\restart64.exe", "/q"],
+        ["bin\\restart64\\restart64.exe", "/q"],
         check=True,
     )
 
@@ -284,6 +283,10 @@ def main() -> int:
         logger.error("administrator privileges required")
         return 1
 
+    # cd to directory of the script
+    program_path = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
+    os.chdir(program_path)
+
     gpu_hwids: list[str] = [gpu.PnPDeviceID for gpu in wmi.WMI().Win32_VideoController()]
 
     if (cpu_count := os.cpu_count()) is not None:
@@ -352,12 +355,12 @@ def main() -> int:
     # use 1.6.0 on Windows Server
     presentmon = f"PresentMon-{'1.9.0' if windows_version_info.major >= 10 and windows_version_info.product_type != 3 else '1.6.0'}-x64.exe"
 
-    config_path = args.config if args.config is not None else f"{program_path}\\config.ini"
+    config_path = args.config if args.config is not None else "config.ini"
     user32 = ctypes.windll.user32
 
     subject_paths: dict[int, str] = {
-        1: f"{program_path}\\bin\\liblava\\lava-triangle.exe",
-        2: f"{program_path}\\bin\\Benchmark.DirectX9.Black.White.exe",
+        1: "bin\\liblava\\lava-triangle.exe",
+        2: "bin\\Benchmark.DirectX9.Black.White.exe",
     }
 
     # delimiters=("=") is required for file path errors with colons
@@ -407,7 +410,7 @@ def main() -> int:
     else:
         benchmark_cpus = list(range(cpu_count + 1))
 
-    session_directory = f"{program_path}\\captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
+    session_directory = f"captures\\AutoGpuAffinity-{time.strftime('%d%m%y%H%M%S')}"
     estimated_time_seconds = (
         10
         + config.getint("settings", "cache_duration")
@@ -498,7 +501,7 @@ def main() -> int:
 
         subprocess.run(
             [
-                f"{program_path}\\bin\\PresentMon\\{presentmon}",
+                f".\\bin\\PresentMon\\{presentmon}",
                 "-stop_existing_session",
                 "-no_top",
                 "-timed",
