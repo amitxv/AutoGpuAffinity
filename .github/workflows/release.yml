@@ -40,7 +40,7 @@ jobs:
         run: .\build.ps1
 
       - name: Zip release
-        run: Compress-Archive -Path building\AutoGpuAffinity -DestinationPath AutoGpuAffinity.zip
+        run: Compress-Archive -Path build\AutoGpuAffinity -DestinationPath AutoGpuAffinity.zip
 
       - name: Create release
         uses: ncipollo/release-action@v1

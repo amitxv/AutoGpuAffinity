@@ -1,16 +1,18 @@
 function main() {
     # pack executable
-    pyinstaller AutoGpuAffinity\main.py --onefile --name AutoGpuAffinity
+    pyinstaller ".\AutoGpuAffinity\main.py" --onefile --name AutoGpuAffinity
 
-    if (Test-Path "building") {
-        Remove-Item -Path "building" -Recurse
+    if (Test-Path ".\build\") {
+        Remove-Item -Path ".\build\" -Recurse
     }
 
     # create folder structure
-    New-Item -ItemType Directory -Path building\AutoGpuAffinity
-    Move-Item dist\AutoGpuAffinity.exe building\AutoGpuAffinity
-    Move-Item AutoGpuAffinity\bin building\AutoGpuAffinity
-    Move-Item AutoGpuAffinity\config.ini building\AutoGpuAffinity
+    New-Item -ItemType Directory -Path ".\build\AutoGpuAffinity\"
+
+    # create final package
+    Move-Item ".\dist\AutoGpuAffinity.exe" ".\build\AutoGpuAffinity\"
+    Move-Item ".\AutoGpuAffinity\bin\" ".\build\AutoGpuAffinity\"
+    Move-Item ".\AutoGpuAffinity\config.ini" ".\build\AutoGpuAffinity\"
 
     return 0
 }
