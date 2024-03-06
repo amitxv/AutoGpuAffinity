@@ -13,7 +13,7 @@ import time
 import traceback
 import winreg
 from configparser import ConfigParser
-from typing import Any
+from typing import Any, NoReturn
 
 import wmi
 from compute_frametimes import Fps
@@ -574,7 +574,7 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+def entry_point() -> NoReturn:
     exit_code = 0
     try:
         exit_code = main()
@@ -592,3 +592,7 @@ if __name__ == "__main__":
             input("press enter to exit")
 
         sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    entry_point()
