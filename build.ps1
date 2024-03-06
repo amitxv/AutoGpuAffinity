@@ -3,13 +3,15 @@ function main() {
         Remove-Item -Path ".\build\" -Recurse
     }
 
+    $entryPoint = "..\..\AutoGpuAffinity\main.py"
+
     # create folder structure
     New-Item -ItemType Directory -Path ".\build\AutoGpuAffinity\"
 
     # pack executable
     New-Item -ItemType Directory -Path ".\build\pyinstaller\"
     Push-Location ".\build\pyinstaller\"
-    pyinstaller "..\..\AutoGpuAffinity\main.py" --onefile --name AutoGpuAffinity
+    pyinstaller $entryPoint --onefile --name AutoGpuAffinity
     Pop-Location
 
     # create final package
