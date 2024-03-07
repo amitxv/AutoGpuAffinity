@@ -1,6 +1,6 @@
 function main() {
     if (Test-Path ".\build\") {
-        Remove-Item -Path ".\build\" -Recurse
+        Remove-Item -Path ".\build\" -Recurse -Force
     }
 
     # entrypoint relative to .\build\pyinstaller\
