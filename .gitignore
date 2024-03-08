@@ -2,3 +2,5 @@ AutoGpuAffinity/lava.log
 AutoGpuAffinity/captures
 *.pyc
 build/
+/AutoGpuAffinity/bin
+/tmp

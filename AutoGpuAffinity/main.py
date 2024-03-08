@@ -32,17 +32,29 @@ def create_lava_cfg(
 
     config_content = {
         "default": {
-            "decorated": True,
-            "floating": False,
-            "fullscreen": enable_fullscren,
-            "height": y_resolution,
-            "maximized": False,
-            "monitor": 0,
-            "resizable": True,
-            "width": x_resolution,
-            "x": 0,
-            "y": 0,
-        },
+            "app": {
+                "delta": 0,
+                "fps cap": 0,
+                "imgui": True,
+                "paused": False,
+                "physical device": 0,
+                "speed": 1.0,
+                "triple buffering": False,
+                "v-sync": False,
+            },
+            "window": {
+                "decorated": True,
+                "floating": False,
+                "fullscreen": enable_fullscren,
+                "height": y_resolution,
+                "maximized": False,
+                "monitor": 0,
+                "resizable": True,
+                "width": x_resolution,
+                "x": 0,
+                "y": 0,
+            },
+        }
     }
 
     with open(lava_triangle_config, "w", encoding="utf-8") as file:
@@ -360,7 +372,7 @@ def main() -> int:
 
     subject_paths: dict[int, str] = {
         1: "bin\\liblava\\lava-triangle.exe",
-        2: "bin\\Benchmark.DirectX9.Black.White.exe",
+        2: "bin\\D3D9-benchmark.exe",
     }
 
     # delimiters=("=") is required for file path errors with colons
