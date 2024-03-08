@@ -21,46 +21,6 @@ from compute_frametimes import Fps
 logger = logging.getLogger("CLI")
 
 
-def create_lava_cfg(
-    enable_fullscren: bool,
-    x_resolution: int,
-    y_resolution: int,
-) -> None:
-    lava_triangle_folder = f"{os.environ['APPDATA']}\\liblava\\lava triangle"
-    os.makedirs(lava_triangle_folder, exist_ok=True)
-    lava_triangle_config = f"{lava_triangle_folder}\\window.json"
-
-    config_content = {
-        "default": {
-            "app": {
-                "delta": 0,
-                "fps cap": 0,
-                "imgui": True,
-                "paused": False,
-                "physical device": 0,
-                "speed": 1.0,
-                "triple buffering": False,
-                "v-sync": False,
-            },
-            "window": {
-                "decorated": True,
-                "floating": False,
-                "fullscreen": enable_fullscren,
-                "height": y_resolution,
-                "maximized": False,
-                "monitor": 0,
-                "resizable": True,
-                "width": x_resolution,
-                "x": 0,
-                "y": 0,
-            },
-        }
-    }
-
-    with open(lava_triangle_config, "w", encoding="utf-8") as file:
-        json.dump(config_content, file, indent=4)
-
-
 def kill_processes(*targets: str) -> None:
     for process in targets:
         try:
@@ -454,12 +414,17 @@ def main() -> int:
     if not config.getboolean("settings", "skip_confirmation"):
         input("press enter to start benchmarking...")
 
+    subject_args: list[str] = []
+
+    # setup liblava args
     if config.getint("settings", "subject") == 1:
-        create_lava_cfg(
-            config.getboolean("liblava", "fullscreen"),
-            config.getint("liblava", "x_resolution"),
-            config.getint("liblava", "y_resolution"),
-        )
+        subject_args = [
+            f"--fullscreen={int(config.getboolean("liblava", "fullscreen"))}",
+            f"--width={config.getint("liblava", "x_resolution")}",
+            f"--height={config.getint("liblava", "y_resolution")}",
+            f"--fps_cap={config.getint("liblava", "fps_cap")}",
+            f"--triple_buffering={config.getboolean("liblava", "triple_buffering")}",
+        ]
 
     # this will create all of the required folders
     os.makedirs(f"{session_directory}\\CSVs", exist_ok=True)
@@ -497,7 +462,7 @@ def main() -> int:
             affinity_args.extend(["/affinity", hex(1 << cpu)])
 
         subprocess.run(
-            ["start", "", *affinity_args, subject_path],
+            ["start", "", *affinity_args, subject_path, *subject_args],
             shell=True,
             check=True,
         )
