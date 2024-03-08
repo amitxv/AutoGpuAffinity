@@ -17,10 +17,10 @@ function main() {
     $entryPoint = "..\..\AutoGpuAffinity\main.py"
 
     # create folder structure
-    New-Item -ItemType Directory -Path ".\build\AutoGpuAffinity\"
+    mkdir ".\build\AutoGpuAffinity\"
 
     # pack executable
-    New-Item -ItemType Directory -Path ".\build\pyinstaller\"
+    mkdir ".\build\pyinstaller\"
     Push-Location ".\build\pyinstaller\"
     pyinstaller $entryPoint --onefile --name AutoGpuAffinity
     Pop-Location
