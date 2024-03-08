@@ -423,7 +423,7 @@ def main() -> int:
             f"--width={config.getint("liblava", "x_resolution")}",
             f"--height={config.getint("liblava", "y_resolution")}",
             f"--fps_cap={config.getint("liblava", "fps_cap")}",
-            f"--triple_buffering={config.getboolean("liblava", "triple_buffering")}",
+            f"--triple_buffering={int(config.getboolean("liblava", "triple_buffering"))}",
         ]
 
     # this will create all of the required folders
