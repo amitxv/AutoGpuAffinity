@@ -13,6 +13,8 @@ function main() {
         Remove-Item -Path ".\build\" -Recurse -Force
     }
 
+    mkdir ".\build\"
+
     # entrypoint relative to .\build\pyinstaller\
     $entryPoint = "..\..\AutoGpuAffinity\main.py"
 
